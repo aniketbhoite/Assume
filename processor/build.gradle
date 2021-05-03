@@ -3,6 +3,7 @@ plugins {
     id 'kotlin'
 }
 apply plugin: 'kotlin-kapt'
+apply plugin: 'maven-publish'
 
 group = 'com.github.aniketbhoite'
 apply plugin: 'com.github.dcendents.android-maven'
