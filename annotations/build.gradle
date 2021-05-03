@@ -4,6 +4,9 @@ plugins {
 }
 apply plugin: 'kotlin-kapt'
 
+group = 'com.github.aniketbhoite'
+apply plugin: 'com.github.dcendents.android-maven'
+
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
