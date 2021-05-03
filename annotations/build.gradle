@@ -21,6 +21,12 @@ compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }
 
+repositories {
+    mavenCentral()
+    jcenter()
+    maven { url "https://jitpack.io" }
+}
+
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
