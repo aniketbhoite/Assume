@@ -1,0 +1,65 @@
+plugins {
+    id 'java-library'
+    id 'kotlin'
+}
+apply plugin: 'kotlin-kapt'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+kapt {
+    correctErrorTypes true
+}
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+    compileOnly project(':annotations')
+    testImplementation project(':annotations')
+
+    implementation "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.2.0"
+
+    def moshi_version = "1.9.2" //Moshi Json converter
+    implementation "com.squareup.moshi:moshi:$moshi_version"
+
+    implementation("com.squareup:kotlinpoet:1.8.0")
+//    implementation("com.squareup:koltinpoet:interop:kotlinx-metadata:core:1.8.0")
+
+    implementation 'com.google.auto.service:auto-service:1.0-rc6'
+    kapt 'com.google.auto.service:auto-service:1.0-rc6'
+
+    implementation "org.jetbrains.kotlin:kotlin-reflect:1.4.32"
+
+    implementation "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.2.0"
+
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+
+    implementation 'com.github.tschuchortdev:kotlin-compile-testing:1.3.6'
+
+
+    // Testing Libraries
+    testImplementation 'junit:junit:4.12'
+
+    testImplementation "com.google.truth:truth:1.1.2"
+
+    // Testing Libraries
+    testImplementation 'androidx.test:runner:1.3.0-alpha02'
+    testImplementation 'androidx.test.espresso:espresso-core:3.3.0-alpha02'
+
+    implementation("com.squareup.okio:okio:3.0.0-alpha.4")
+
+}
