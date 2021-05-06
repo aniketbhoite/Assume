@@ -146,6 +146,7 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
             }
             methodName = methodName.replace("-", "DASH")
                 .replace("/", "SLASH")
+                .replace(".","DOT")
 
             return methodName
         }

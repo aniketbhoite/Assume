@@ -93,6 +93,7 @@ class AssumeInterceptor(private val baseUrl: String = "") : Interceptor {
 
             return url.replace("-", "DASH")
                 .replace("/", "SLASH")
+                .replace(".","DOT")
         }
     }
 }
