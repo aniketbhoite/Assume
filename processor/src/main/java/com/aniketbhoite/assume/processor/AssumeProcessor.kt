@@ -13,6 +13,7 @@ import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.Processor
 import javax.annotation.processing.RoundEnvironment
 import javax.lang.model.SourceVersion
+import javax.lang.model.element.ElementKind
 import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 
@@ -47,6 +48,27 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
         val elements = roundEnv.getElementsAnnotatedWith(Assume::class.java)
 
         for (element in elements) {
+
+            val interfaceElement = element.enclosingElement
+            val metadata = interfaceElement.kotlinClassMetadata()
+
+            if (metadata == null || !interfaceElement.kind.isInterface) {
+                messager.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "method Parent must be Interface",
+                    element
+                )
+                continue
+            }
+
+            if (element.kind != ElementKind.METHOD) {
+                messager.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "Annotation must be only on Method",
+                    element
+                )
+                continue
+            }
 
             val assumeAnnotation = element.getAnnotation(Assume::class.java)
             val retrofitMethodAnnotationValue =
