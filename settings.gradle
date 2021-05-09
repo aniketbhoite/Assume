@@ -1,3 +1,4 @@
+include ':annotations-empty'
 include ':app'
 include ':annotations'
 include ':processor'
