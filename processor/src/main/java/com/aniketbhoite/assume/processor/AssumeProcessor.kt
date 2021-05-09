@@ -2,6 +2,7 @@ package com.aniketbhoite.assume.processor
 
 
 import com.aniketbhoite.assume.annotations.Assume
+import com.aniketbhoite.assume.annotations.PathIndexes
 import com.google.auto.service.AutoService
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -18,7 +19,7 @@ import javax.tools.Diagnostic
 @AutoService(Processor::class)
 class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
 
-    val generatedDir: File? get() = options[KAPT_KOTLIN_GENERATED]?.let(::File)
+    private val generatedDir: File? get() = options[KAPT_KOTLIN_GENERATED]?.let(::File)
 
     override fun getSupportedSourceVersion(): SourceVersion = SourceVersion.latestSupported()
 
@@ -30,7 +31,7 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
         get() = super.processingEnv
 
 
-    val hashmap = hashMapOf<String, Pair<String, Int>>()
+    private val requestHashMap = hashMapOf<String, Triple<String, Int, MutableList<Int>>>()
 
 
     override fun process(annotations: Set<TypeElement>, roundEnv: RoundEnvironment): Boolean {
@@ -66,7 +67,7 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
             if (retrofitMethodAnnotationValue == null) {
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
-                    "Cannot find Retrofit `REQUEST METHOD` annotations output dir. check here https://square.github.io/retrofit/"
+                    "Cannot find Retrofit `REQUEST METHOD` annotations. check here https://square.github.io/retrofit  "
                 )
                 return false
             }
@@ -78,20 +79,38 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
                 "AssumeProcessor $retrofitMethodAnnotationValue  ${assumeAnnotation.response} "
             )
 
-            hashmap += retrofitMethodAnnotationValue to (assumeAnnotation.response to assumeAnnotation.responseCode)
+            if (retrofitMethodAnnotationValue.isNotBlank()) {
+
+                val seg = retrofitMethodAnnotationValue.split("/").toMutableList()
+                val pathIndexes = mutableListOf<Int>()
+
+                seg.forEachIndexed { index, s ->
+                    if (s.contains("{") && s.contains("}")) {
+                        seg[index] = "AS_PATH_AS"
+                        pathIndexes.add(index)
+                    }
+                    seg[index] = getSafeUrlNameForMethod(seg[index])
+                }
+
+                requestHashMap += seg.joinToString("SLASH") to Triple(
+                    assumeAnnotation.response,
+                    assumeAnnotation.responseCode,
+                    pathIndexes
+                )
+            }
         }
 
 
         generateClass(outputDir)
-
-
-
 
         return true
     }
 
 
     private fun generateClass(outputDir: File) {
+
+        if (requestHashMap.isEmpty())
+            return
 
         val pairClassName = ClassName("kotlin", "Pair")
         val pairFirstClassName = ClassName("kotlin", "String")
@@ -100,20 +119,24 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
         val returnType: ParameterizedTypeName =
             pairClassName.parameterizedBy(pairFirstClassName, pairSecondClassName)
 
-        messager.printMessage(
-            Diagnostic.Kind.WARNING,
-            "myhashmap ${hashmap}  ${hashmap.size} "
-        )
+        requestHashMap.forEach { (key, value) ->
 
-        hashmap.forEach { (key, value) ->
+            val funSpec = FunSpec.builder(
+                "get${getSafeUrlNameForMethod(key)}"
+            )
+                .returns(returnType)
+                .addStatement("return (%S to ${value.second})", value.first)
+
+            if (value.third.size > 0)
+                funSpec.addAnnotation(
+                    AnnotationSpec.builder(PathIndexes::class.java)
+                        .addMember("index = ${value.third}")
+                        .build()
+                )
+
 
             typeSpec.addFunction(
-                FunSpec.builder(
-                    "get${getSafeUrlNameForMethod(key)}"
-                )
-                    .returns(returnType)
-                    .addStatement("return (%S to ${value.second})", value.first)
-                    .build()
+                funSpec = funSpec.build()
             )
         }
 
@@ -139,14 +162,20 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
     companion object {
         const val KAPT_KOTLIN_GENERATED = "kapt.kotlin.generated"
 
-        fun getSafeUrlNameForMethod(url: String): String {
+        private fun getUrlWithoutQueryParam(url: String): String {
             var methodName = url
             if (methodName.contains("?")) {
                 methodName = methodName.subSequence(0, methodName.indexOf('?')).toString()
             }
+            return methodName
+        }
+
+        fun getSafeUrlNameForMethod(url: String): String {
+            var methodName = getUrlWithoutQueryParam(url)
+
             methodName = methodName.replace("-", "DASH")
                 .replace("/", "SLASH")
-                .replace(".","DOT")
+                .replace(".", "DOT")
 
             return methodName
         }

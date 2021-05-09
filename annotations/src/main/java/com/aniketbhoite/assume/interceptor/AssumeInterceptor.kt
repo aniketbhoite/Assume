@@ -1,21 +1,27 @@
 package com.aniketbhoite.assume.interceptor
 
+import com.aniketbhoite.assume.annotations.PathIndexes
+import com.aniketbhoite.assume.interceptor.AssumeInterceptorHelper.Companion.cachedAssumeResponse
+import com.aniketbhoite.assume.interceptor.AssumeInterceptorHelper.Companion.kClassCompanionObjectInstance
+import com.aniketbhoite.assume.interceptor.AssumeInterceptorHelper.Companion.nonPathFunctionsMap
+import com.aniketbhoite.assume.interceptor.AssumeInterceptorHelper.Companion.pathFunctions
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Protocol
 import okhttp3.Response
-import okhttp3.ResponseBody
-import kotlin.reflect.full.companionObject
-import kotlin.reflect.full.companionObjectInstance
-import kotlin.reflect.full.functions
+import okhttp3.ResponseBody.Companion.toResponseBody
 
-class AssumeInterceptor(private val baseUrl: String = "") : Interceptor {
+class AssumeInterceptor(baseUrl: String = "") : Interceptor {
+
+    private val baseHttpUrl = baseUrl.toHttpUrlOrNull()?.newBuilder()?.build()
 
     private val encodedPathToRemove: String =
-        baseUrl.toHttpUrlOrNull()?.newBuilder()?.build()?.encodedPath ?: ""
+        baseHttpUrl?.encodedPath ?: ""
 
-    private val cachedAssumeResponse: HashMap<String, Pair<String, Int>> = hashMapOf()
+    private val encodePathSegmentsToRemove =
+        baseHttpUrl?.encodedPathSegments ?: emptyList()
+
 
     override fun intercept(chain: Interceptor.Chain): Response {
 
@@ -23,7 +29,7 @@ class AssumeInterceptor(private val baseUrl: String = "") : Interceptor {
 
         val url = request.url
 
-        var mockResponse: String = ""
+        var mockResponse = ""
         var mockResponseCode = 200
 
         try {
@@ -34,22 +40,42 @@ class AssumeInterceptor(private val baseUrl: String = "") : Interceptor {
             val responsePair = if (cachedAssumeResponse.containsKey(methodName)) {
                 cachedAssumeResponse[methodName]
             } else {
-                val kClass =
-                    Class.forName("com.aniketbhoite.assume.mocker.AssumeClass")
 
-                val expectedFunction =
-                    kClass.kotlin.companionObject?.functions?.find { it.name == methodName }
+
+                var expectedFunction =
+                    nonPathFunctionsMap?.get(methodName)
+
+                if (expectedFunction == null) {
+                    pathFunctions?.forEach main@{ kFunc ->
+                        kFunc.annotations.forEach {
+                            if (it is PathIndexes) {
+                                val kFuncName = "get${
+                                    getPathSafeURLNameForMethod(
+                                        it.index,
+                                        url.encodedPathSegments.removeBaseUrlSegments(
+                                            encodePathSegmentsToRemove
+                                        )
+                                    )
+                                }"
+                                if (kFunc.name == kFuncName) {
+                                    expectedFunction = kFunc
+                                    return@main
+                                }
+
+                            }
+                        }
+
+                    }
+                }
+
+
                 val localResponsePair =
-                    expectedFunction?.call(kClass.kotlin.companionObjectInstance)
+                    expectedFunction?.call(kClassCompanionObjectInstance)
                 if (localResponsePair is Pair<*, *> && localResponsePair.first is String && localResponsePair.second is Int)
                     cachedAssumeResponse[methodName] = localResponsePair as Pair<String, Int>
 
                 localResponsePair
             }
-
-
-
-
 
 
             if (responsePair is Pair<*, *> && responsePair.first is String && responsePair.second is Int) {
@@ -70,10 +96,8 @@ class AssumeInterceptor(private val baseUrl: String = "") : Interceptor {
                     .protocol(Protocol.HTTP_2)
                     .message(mockResponse)
                     .body(
-                        ResponseBody.create(
-                            "application/json".toMediaTypeOrNull(),
-                            mockResponse.toByteArray()
-                        )
+                        mockResponse
+                            .toResponseBody("application/json".toMediaTypeOrNull())
                     )
                     .addHeader("content-type", "application/json")
                     .build()
@@ -81,9 +105,6 @@ class AssumeInterceptor(private val baseUrl: String = "") : Interceptor {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-
-
-
 
         return chain.proceed(chain.request())
     }
@@ -93,7 +114,22 @@ class AssumeInterceptor(private val baseUrl: String = "") : Interceptor {
 
             return url.replace("-", "DASH")
                 .replace("/", "SLASH")
-                .replace(".","DOT")
+                .replace(".", "DOT")
+        }
+
+        fun getPathSafeURLNameForMethod(indexes: IntArray, segments: List<String>): String {
+            val pathSegments = segments.toMutableList()
+            indexes.forEach {
+                pathSegments[it] = "AS_PATH_AS"
+            }
+
+            return getSafeUrlNameForMethod(pathSegments.joinToString("/"))
+        }
+
+        fun List<String>.removeBaseUrlSegments(segments: List<String>): List<String> {
+            val cleanUrlSegments = this.toMutableList()
+            cleanUrlSegments.removeAll(segments)
+            return cleanUrlSegments
         }
     }
 }

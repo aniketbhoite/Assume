@@ -7,3 +7,8 @@ annotation class Assume(
     val response: String,
     val responseCode: Int = 200
 )
+
+@Target(AnnotationTarget.FUNCTION)
+annotation class PathIndexes(
+    vararg val index: Int
+)
