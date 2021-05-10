@@ -5,6 +5,8 @@ import com.aniketbhoite.assume.interceptor.AssumeInterceptorHelper.Companion.cac
 import com.aniketbhoite.assume.interceptor.AssumeInterceptorHelper.Companion.kClassCompanionObjectInstance
 import com.aniketbhoite.assume.interceptor.AssumeInterceptorHelper.Companion.nonPathFunctionsMap
 import com.aniketbhoite.assume.interceptor.AssumeInterceptorHelper.Companion.pathFunctions
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -34,7 +36,7 @@ class AssumeInterceptor(baseUrl: String = "") : Interceptor {
 
         try {
             val methodName = "get${
-                getSafeUrlNameForMethod(url.encodedPath.replace(encodedPathToRemove, ""))
+                getSafeUrlNameForMethod(url.encodedPath.replaceFirst(encodedPathToRemove, ""))
             }"
 
             val responsePair = if (cachedAssumeResponse.containsKey(methodName)) {
