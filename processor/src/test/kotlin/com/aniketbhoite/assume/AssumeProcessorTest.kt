@@ -28,7 +28,8 @@ class AssumeProcessorTest {
                             ): String
                 }
             """
-                ))
+                )
+            )
 
 //            inheritClassPath = true
             annotationProcessors = listOf(AssumeProcessor())
