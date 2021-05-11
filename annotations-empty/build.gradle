@@ -29,5 +29,5 @@ repositories {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation 'com.squareup.okhttp3:okhttp:4.9.1'
+    implementation "com.squareup.okhttp3:okhttp:$okhttp3_version"
 }
