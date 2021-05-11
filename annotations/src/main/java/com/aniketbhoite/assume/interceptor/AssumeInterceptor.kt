@@ -6,37 +6,35 @@ import com.aniketbhoite.assume.interceptor.AssumeInterceptorHelper.Companion.kCl
 import com.aniketbhoite.assume.interceptor.AssumeInterceptorHelper.Companion.nonPathFunctionsMap
 import com.aniketbhoite.assume.interceptor.AssumeInterceptorHelper.Companion.pathFunctions
 import okhttp3.HttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Protocol
 import okhttp3.Response
-import okhttp3.ResponseBody.Companion.toResponseBody
+import okhttp3.ResponseBody
+import okhttp3.MediaType
 
 class AssumeInterceptor(baseUrl: String = "") : Interceptor {
 
-    private val baseHttpUrl = baseUrl.toHttpUrlOrNull()?.newBuilder()?.build()
+    private val baseHttpUrl = HttpUrl.parse(baseUrl)?.newBuilder()?.build()
 
     private val encodedPathToRemove: String =
-        baseHttpUrl?.encodedPath ?: ""
+        baseHttpUrl?.encodedPath() ?: ""
 
     private val encodePathSegmentsToRemove =
-        baseHttpUrl?.encodedPathSegments ?: emptyList()
+        baseHttpUrl?.encodedPathSegments() ?: emptyList()
 
 
     override fun intercept(chain: Interceptor.Chain): Response {
 
         val request = chain.request()
 
-        val url = request.url
+        val url = request.url()
 
         var mockResponse = ""
         var mockResponseCode = 200
 
         try {
             val methodName = "get${
-                getSafeUrlNameForMethod(url.encodedPath.replaceFirst(encodedPathToRemove, ""))
+                getSafeUrlNameForMethod(url.encodedPath().replaceFirst(encodedPathToRemove, ""))
             }"
 
             val responsePair = if (cachedAssumeResponse.containsKey(methodName)) {
@@ -54,7 +52,7 @@ class AssumeInterceptor(baseUrl: String = "") : Interceptor {
                                 val kFuncName = "get${
                                     getPathSafeURLNameForMethod(
                                         it.index,
-                                        url.encodedPathSegments.removeBaseUrlSegments(
+                                        url.encodedPathSegments().removeBaseUrlSegments(
                                             encodePathSegmentsToRemove
                                         )
                                     )
@@ -98,8 +96,10 @@ class AssumeInterceptor(baseUrl: String = "") : Interceptor {
                     .protocol(Protocol.HTTP_2)
                     .message(mockResponse)
                     .body(
-                        mockResponse
-                            .toResponseBody("application/json".toMediaTypeOrNull())
+                        ResponseBody.create(
+                            MediaType.get("application/json"),
+                            mockResponse
+                        )
                     )
                     .addHeader("content-type", "application/json")
                     .build()

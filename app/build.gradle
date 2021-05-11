@@ -56,14 +56,14 @@ dependencies {
 
     // Network and Moshi libraries
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
-    implementation 'com.squareup.okhttp3:okhttp:4.9.1'
+    implementation "com.squareup.okhttp3:okhttp:$okhttp3_version"
     implementation 'com.squareup.retrofit2:converter-moshi:2.9.0'
     implementation 'com.squareup.moshi:moshi:1.11.0'
     kapt 'com.squareup.moshi:moshi-kotlin-codegen:1.9.2'
 
-    implementation 'com.squareup.okhttp3:logging-interceptor:4.4.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.8.0'
 
-    implementation "org.jetbrains.kotlin:kotlin-reflect:1.4.32"
+    implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_reflect"
 
 
     kaptDebug project(':processor')
