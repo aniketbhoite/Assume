@@ -1,12 +1,12 @@
 # Assume
 
-Response Mocking for Retrofit using annotations
-Assume Provides safe and easy way to mock API responses for retrofit-okhttp3.
+Response Mocking for Retrofit using annotations. Assume Provides safe and easy way to mock API responses for retrofit-okhttp3.
 
 ## Download
 Add [Jitpack](https://jitpack.io/) repository in project build.gradle file
 
 ```
+
 allprojects {
     repositories {
         ...
@@ -19,14 +19,17 @@ allprojects {
 Add dependencies to your module's build.gradle file:
 
 ```
+
 def assume_version = "0.0-beta02"
 
-//*kaptDebug* to reduce unnecessary Annotation processing for release build generations
+// kaptDebug to reduce unnecessary Annotation processing for release build generations
 kaptDebug "com.github.aniketbhoite.Assume:processor:$assume_version"
-// *debugImplementation* ensures APIs are mocked only in debug making it production safe
+
+// debugImplementation ensures APIs are mocked only in debug making it production safe
 debugImplementation "com.github.aniketbhoite.Assume:annotations:$assume_version"
 
 releaseImplementation "com.github.aniketbhoite.Assume:annotations-empty:$assume_version"
+
 ```
 
 *annotations-empty* package adds empty placeholder classes. If you add annotation-empty then assume won't interfere with the actual response even if you keep the assume code in your codebase by mistake.
@@ -36,6 +39,7 @@ releaseImplementation "com.github.aniketbhoite.Assume:annotations-empty:$assume_
 Add @Assume annotation to API method with wanted response, responseCode is optional
 
 ```
+
 @Assume(
 	responseCode = 200,
 	response ="{\"page\":1,\"results\":[],\"total_pages\":10,\"total_results\":100}"
