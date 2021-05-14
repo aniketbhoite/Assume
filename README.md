@@ -73,6 +73,3 @@ You should be good to go.👍🏽
 - Assume is not perfect and we are working on it to make it better and easy to use. It should work with most of the endpoints and it is production safe
 
 For any bugs or doubts raise [issue](https://github.com/aniketbhoite/Assume/issues) & for any changes or improvements start a [pull request](https://github.com/aniketbhoite/Assume/pulls)
-
-
-Special thanks to [Akash Kamble](https://github.com/Akashkamble) for suggestions, guidance & testing.
