@@ -7,6 +7,7 @@ import com.google.auto.service.AutoService
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import retrofit2.http.*
+import java.io.BufferedReader
 import java.io.File
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.ProcessingEnvironment
@@ -71,6 +72,11 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
             }
 
             val assumeAnnotation = element.getAnnotation(Assume::class.java)
+            var response = assumeAnnotation.response
+            if(assumeAnnotation.responseFromFile){
+                val bufferedReader: BufferedReader = File(assumeAnnotation.response).bufferedReader()
+                response = bufferedReader.use { it.readText() }
+            }
             val retrofitMethodAnnotationValue =
                 when {
                     element.getAnnotation(GET::class.java) != null ->
@@ -115,7 +121,7 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
                 }
 
                 requestHashMap += seg.joinToString("SLASH") to Triple(
-                    assumeAnnotation.response,
+                    response,
                     assumeAnnotation.responseCode,
                     pathIndexes
                 )
