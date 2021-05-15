@@ -5,7 +5,8 @@ package com.aniketbhoite.assume.annotations
 @Target(AnnotationTarget.FUNCTION)
 annotation class Assume(
     val response: String,
-    val responseCode: Int = 200
+    val responseCode: Int = 200,
+    val ignore: Boolean = false
 )
 
 @Target(AnnotationTarget.FUNCTION)

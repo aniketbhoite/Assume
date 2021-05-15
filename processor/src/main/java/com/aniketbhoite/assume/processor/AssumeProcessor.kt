@@ -101,7 +101,7 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
                 "AssumeProcessor $retrofitMethodAnnotationValue  ${assumeAnnotation.response} "
             )
 
-            if (retrofitMethodAnnotationValue.isNotBlank()) {
+            if (retrofitMethodAnnotationValue.isNotBlank() && !assumeAnnotation.ignore) {
 
                 val seg = retrofitMethodAnnotationValue.split("/").toMutableList()
                 val pathIndexes = mutableListOf<Int>()
