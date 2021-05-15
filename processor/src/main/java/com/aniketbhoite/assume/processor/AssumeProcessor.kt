@@ -74,8 +74,17 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
             val assumeAnnotation = element.getAnnotation(Assume::class.java)
             var response = assumeAnnotation.response
             if(assumeAnnotation.responseFromFile){
-                val bufferedReader: BufferedReader = File(assumeAnnotation.response).bufferedReader()
-                response = bufferedReader.use { it.readText() }
+                try {
+                    val bufferedReader: BufferedReader = File(assumeAnnotation.response).bufferedReader()
+                    bufferedReader.use { it.readText() }.also { response = it }
+                } catch (e: Exception) {
+                    messager.printMessage(
+                        Diagnostic.Kind.ERROR,
+                        "Something wrong with the file ${assumeAnnotation.response}",
+                        element
+                    )
+                    continue
+                }
             }
             val retrofitMethodAnnotationValue =
                 when {
