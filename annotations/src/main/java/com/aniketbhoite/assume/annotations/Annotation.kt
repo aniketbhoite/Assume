@@ -1,6 +1,5 @@
 package com.aniketbhoite.assume.annotations
 
-
 @Retention(AnnotationRetention.SOURCE)
 @Target(AnnotationTarget.FUNCTION)
 annotation class Assume(
