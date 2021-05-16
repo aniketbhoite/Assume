@@ -7,10 +7,10 @@ import com.aniketbhoite.assume.interceptor.AssumeInterceptorHelper.Companion.non
 import com.aniketbhoite.assume.interceptor.AssumeInterceptorHelper.Companion.pathFunctions
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
+import okhttp3.MediaType
 import okhttp3.Protocol
 import okhttp3.Response
 import okhttp3.ResponseBody
-import okhttp3.MediaType
 
 class AssumeInterceptor(baseUrl: String = "") : Interceptor {
 
@@ -21,7 +21,6 @@ class AssumeInterceptor(baseUrl: String = "") : Interceptor {
 
     private val encodePathSegmentsToRemove =
         baseHttpUrl?.encodedPathSegments() ?: emptyList()
-
 
     override fun intercept(chain: Interceptor.Chain): Response {
 
@@ -34,13 +33,12 @@ class AssumeInterceptor(baseUrl: String = "") : Interceptor {
 
         try {
             val methodName = "get${
-                getSafeUrlNameForMethod(url.encodedPath().replaceFirst(encodedPathToRemove, ""))
+            getSafeUrlNameForMethod(url.encodedPath().replaceFirst(encodedPathToRemove, ""))
             }"
 
             val responsePair = if (cachedAssumeResponse.containsKey(methodName)) {
                 cachedAssumeResponse[methodName]
             } else {
-
 
                 var expectedFunction =
                     nonPathFunctionsMap?.get(methodName)
@@ -50,24 +48,21 @@ class AssumeInterceptor(baseUrl: String = "") : Interceptor {
                         kFunc.annotations.forEach {
                             if (it is PathIndexes) {
                                 val kFuncName = "get${
-                                    getPathSafeURLNameForMethod(
-                                        it.index,
-                                        url.encodedPathSegments().removeBaseUrlSegments(
-                                            encodePathSegmentsToRemove
-                                        )
+                                getPathSafeURLNameForMethod(
+                                    it.index,
+                                    url.encodedPathSegments().removeBaseUrlSegments(
+                                        encodePathSegmentsToRemove
                                     )
+                                )
                                 }"
                                 if (kFunc.name == kFuncName) {
                                     expectedFunction = kFunc
                                     return@main
                                 }
-
                             }
                         }
-
                     }
                 }
-
 
                 val localResponsePair =
                     expectedFunction?.call(kClassCompanionObjectInstance)
@@ -77,13 +72,10 @@ class AssumeInterceptor(baseUrl: String = "") : Interceptor {
                 localResponsePair
             }
 
-
             if (responsePair is Pair<*, *> && responsePair.first is String && responsePair.second is Int) {
                 mockResponse = responsePair.first as String
                 mockResponseCode = responsePair.second as Int
             }
-
-
         } catch (e: Exception) {
             e.printStackTrace()
         }

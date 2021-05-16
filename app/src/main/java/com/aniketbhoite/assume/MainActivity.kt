@@ -10,11 +10,9 @@ import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
     }
 
     override fun onResume() {
@@ -30,7 +28,6 @@ class MainActivity : AppCompatActivity() {
                     findViewById<TextView>(R.id.textview).text = result.toString()
                 }
             } catch (e: Exception) {
-
             }
         }
 
@@ -41,14 +38,9 @@ class MainActivity : AppCompatActivity() {
                         ApiService.invoke().getSport()
                     }
 
-
                 findViewById<TextView>(R.id.textview2).text = result.toString()
             } catch (e: Exception) {
-
             }
-
         }
     }
-
-
 }

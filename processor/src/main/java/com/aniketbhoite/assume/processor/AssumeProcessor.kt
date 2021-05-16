@@ -1,12 +1,20 @@
 package com.aniketbhoite.assume.processor
 
-
 import com.aniketbhoite.assume.annotations.Assume
 import com.aniketbhoite.assume.annotations.PathIndexes
 import com.google.auto.service.AutoService
-import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import retrofit2.http.*
+import com.squareup.kotlinpoet.TypeSpec
+import retrofit2.http.DELETE
+import retrofit2.http.GET
+import retrofit2.http.PATCH
+import retrofit2.http.POST
+import retrofit2.http.PUT
 import java.io.File
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.ProcessingEnvironment
@@ -27,13 +35,10 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
     override fun getSupportedAnnotationTypes(): Set<String> =
         setOf(Assume::class.java.canonicalName)
 
-
     override val processingEnv: ProcessingEnvironment
         get() = super.processingEnv
 
-
     private val requestHashMap = hashMapOf<String, Triple<String, Int, MutableList<Int>>>()
-
 
     override fun process(annotations: Set<TypeElement>, roundEnv: RoundEnvironment): Boolean {
         val outputDir = generatedDir
@@ -94,8 +99,6 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
                 return false
             }
 
-
-
             messager.printMessage(
                 Diagnostic.Kind.WARNING,
                 "AssumeProcessor $retrofitMethodAnnotationValue  ${assumeAnnotation.response} "
@@ -122,12 +125,10 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
             }
         }
 
-
         generateClass(outputDir)
 
         return true
     }
-
 
     private fun generateClass(outputDir: File) {
 
@@ -156,19 +157,16 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
                         .build()
                 )
 
-
             typeSpec.addFunction(
                 funSpec = funSpec.build()
             )
         }
-
 
         val classBuilder = TypeSpec.classBuilder("AssumeClass")
             .addType(
                 typeSpec.build()
             )
             .build()
-
 
         FileSpec.builder(
             "com.aniketbhoite.assume.mocker",
@@ -179,7 +177,6 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
             .build()
             .writeTo(outputDir)
     }
-
 
     companion object {
         const val KAPT_KOTLIN_GENERATED = "kapt.kotlin.generated"
@@ -202,5 +199,4 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
             return methodName
         }
     }
-
 }
