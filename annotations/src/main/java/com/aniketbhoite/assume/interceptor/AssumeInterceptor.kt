@@ -7,8 +7,6 @@ import com.aniketbhoite.assume.interceptor.AssumeInterceptorHelper.Companion.non
 import com.aniketbhoite.assume.interceptor.AssumeInterceptorHelper.Companion.pathFunctions
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
-import okhttp3.MediaType
-import okhttp3.Protocol
 import okhttp3.Response
 import okhttp3.ResponseBody
 
@@ -82,18 +80,20 @@ class AssumeInterceptor(baseUrl: String = "") : Interceptor {
 
         try {
             if (mockResponse.isNotEmpty()) {
-                return chain.proceed(chain.request())
+
+                val response = chain.proceed(chain.request())
+                val contentType = response.body()?.contentType()
+
+                return response
                     .newBuilder()
                     .code(mockResponseCode)
-                    .protocol(Protocol.HTTP_2)
                     .message(mockResponse)
                     .body(
                         ResponseBody.create(
-                            MediaType.get("application/json"),
+                            contentType,
                             mockResponse
                         )
                     )
-                    .addHeader("content-type", "application/json")
                     .build()
             }
         } catch (e: Exception) {
