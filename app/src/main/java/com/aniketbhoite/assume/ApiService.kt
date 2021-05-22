@@ -1,94 +1,86 @@
 package com.aniketbhoite.assume
 
 import com.aniketbhoite.assume.annotations.Assume
-import com.aniketbhoite.assume.interceptor.AssumeInterceptor
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
-import retrofit2.http.DELETE
-import retrofit2.http.POST
+import com.aniketbhoite.assume.data.CommentModel
+import com.aniketbhoite.assume.data.PostListModelItem
+import retrofit2.http.GET
+import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ApiService {
 
     @Assume(
-        responseCode = 200,
-        response =
-        "{\"status\":\"ok\",\"totalResults\":999,\"articles\":[{\"source\":{\"id\":null,\"name\":\"NYC\"},\"author\":\"Bloomberg\",\"title\":\"Rich Indians flee by private jet as Covid-19 infections spiral - Hindustan Times\",\"description\":\"With reports of hospital bed and drug shortages sweeping social media, Indian tycoons and others able to afford fares running into millions of rupees are booking flights to boltholes in Europe, the Middle East and the Indian Ocean.\",\"url\":\"https://www.hindustantimes.com/india-news/rich-indians-flee-by-private-jet-as-covid-19-infections-spiral-101619448267544.html\",\"urlToImage\":\"https://images.hindustantimes.com/img/2021/04/26/1600x900/approaches-american-airlines-national-landing-airport-washington_c3337c54-5f20-11e9-bb04-32a78a0b0bbe_1619448509890.jpg\",\"publishedAt\":\"2021-04-26T14:50:40Z\",\"content\":\"Indias mounting crisis surrounding a surge in coronavirus infections is prompting wealthy families to flee the country by private jet.\\r\\nWith reports of hospital bed and drug shortages sweeping social… [+2429 chars]\"},{\"source\":{\"id\":null,\"name\":\"Livemint\"},\"author\":\"Shayan Ghosh\",\"title\":\"If left unchecked, second Covid-19 wave could be inflationary: RBI - Mint\",\"description\":\"Pandemic protocols, speedier vaccination, ramping up hospital and ancillary capacity, and remaining resolutely focused on a post-pandemic future of strong and sustainable growth with macroeconomic, financial stability is the way forward, says RBI\",\"url\":\"https://www.livemint.com/economy/left-unchecked-second-coivd-19-wave-could-be-inflationary-rbi-11619447208219.html\",\"urlToImage\":\"https://images.livemint.com/img/2021/04/26/600x338/3c5caacc-9e05-11eb-bcc6-91c576c9961b_1618514778038_1619447315261.jpg\",\"publishedAt\":\"2021-04-26T14:33:15Z\",\"content\":\"MUMBAI :\\r\\nThe second wave of covid-19 in India, if left uncontrolled, could lead to prolonged restrictions on movement and supply chain disruptions with consequent inflationary pressures, the Reserve… [+3949 chars]\"},{\"source\":{\"id\":null,\"name\":\"Hindustan Times\"},\"author\":\"hindustantimes.com\",\"title\":\"Gap between Sputnik-V doses can be increased from 3 weeks to 3 months, say makers - Hindustan Times\",\"description\":\"The makers of the vaccine, Gamaleya Research Centre, said that the interval may even prolong the effect of the vaccine and won't interfere with immune response spurred by the vaccine.\",\"url\":\"https://www.hindustantimes.com/world-news/gap-between-sputnik-v-doses-can-be-increased-say-makers-101619445514281.html\",\"urlToImage\":\"https://images.hindustantimes.com/img/2021/04/26/1600x900/2021-04-24T154931Z_720167739_RC2F2N9NS4ED_RTRMADP_3_HEALTH-CORONAVIRUS-VENEZUELA-RUSSIA_1619445749903_1619445973092.jpg\",\"publishedAt\":\"2021-04-26T14:08:09Z\",\"content\":\"The director of Russias Gamaleya Research Centre, which developed the Sputnik V vaccine against coronavirus disease (Covid-19), said it is possible to increase the minimum interval between the first … [+1834 chars]\"},{\"source\":{\"id\":null,\"name\":\"CarToq.com\"},\"author\":\"Paarth Khatri\",\"title\":\"Suzuki launches the new generation Hayabusa for Rs. 16.40 lakhs ex-showroom - CarToq.com\",\"description\":\"Suzuki has finally launched the much-awaited Hayabusa in the Indian market. The motorcycle has been priced at Rs. 16.40 lakhs ex-showroom which is Rs. 3 lakhs pricier than the previous one that was priced at Rs. 13.75 lakhs ex-showroom. The booking amount for…\",\"url\":\"https://www.cartoq.com/suzuki-launches-the-new-generation-hayabusa-for-rs-16-40-lakhs-ex-showroom/\",\"urlToImage\":\"https://www.cartoq.com/wp-content/uploads/2021/04/Suzuki-Hayabusa-featured-1019x530.jpg\",\"publishedAt\":\"2021-04-26T13:57:14Z\",\"content\":\"Suzuki has finally launched the much-awaited Hayabusa in the Indian market. The motorcycle has been priced at Rs. 16.40 lakhs ex-showroom which is Rs. 3 lakhs pricier than the previous one that was p… [+3284 chars]\"}]}"
+        response = "[\n" +
+            "  {\n" +
+            "    \"userId\": 1,\n" +
+            "    \"id\": 1,\n" +
+            "    \"title\": \"Test title 1\",\n" +
+            "    \"body\": \"Test title 1\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"userId\": 2,\n" +
+            "    \"id\": 2,\n" +
+            "    \"title\": \"Test title 2\",\n" +
+            "    \"body\": \"Test title 2\"\n" +
+            "  }\n" +
+            "]"
     )
-    @POST("v2/top-headlines.json")
-    suspend fun getHeadline(): NewsResponse
+    @GET("posts")
+    suspend fun getPosts(): List<PostListModelItem>
 
     @Assume(
         responseCode = 200,
-        ignore = false,
         response = "{\n" +
-            "  \"status\": \"ok\",\n" +
-            "  \"totalResults\": 713,\n" +
-            "  \"articles\": [\n" +
-            "    {\n" +
-            "      \"source\": {\n" +
-            "        \"id\": null,\n" +
-            "        \"name\": \"NYC\"\n" +
-            "      },\n" +
-            "      \"author\": \"Bloomberg\",\n" +
-            "      \"title\": \"Rich Indians flee by private jet as Covid-19 infections spiral - Hindustan Times\",\n" +
-            "      \"description\": \"With reports of hospital bed and drug shortages sweeping social media, Indian tycoons and others able to afford fares running into millions of rupees are booking flights to boltholes in Europe, the Middle East and the Indian Ocean.\",\n" +
-            "      \"url\": \"https://www.hindustantimes.com/india-news/rich-indians-flee-by-private-jet-as-covid-19-infections-spiral-101619448267544.html\",\n" +
-            "      \"urlToImage\": \"https://images.hindustantimes.com/img/2021/04/26/1600x900/approaches-american-airlines-national-landing-airport-washington_c3337c54-5f20-11e9-bb04-32a78a0b0bbe_1619448509890.jpg\",\n" +
-            "      \"publishedAt\": \"2021-04-26T14:50:40Z\",\n" +
-            "      \"content\": \"Indias mounting crisis surrounding a surge in coronavirus infections is prompting wealthy families to flee the country by private jet.\\\\r\\\\nWith reports of hospital bed and drug shortages sweeping social… [+2429 chars]\"\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"source\": {\n" +
-            "        \"id\": null,\n" +
-            "        \"name\": \"Livemint\"\n" +
-            "      },\n" +
-            "      \"author\": \"Shayan Ghosh\",\n" +
-            "      \"title\": \"If left unchecked, second Covid-19 wave could be inflationary: RBI - Mint\",\n" +
-            "      \"description\": \"Pandemic protocols, speedier vaccination, ramping up hospital and ancillary capacity, and remaining resolutely focused on a post-pandemic future of strong and sustainable growth with macroeconomic, financial stability is the way forward, says RBI\",\n" +
-            "      \"url\": \"https://www.livemint.com/economy/left-unchecked-second-coivd-19-wave-could-be-inflationary-rbi-11619447208219.html\",\n" +
-            "      \"urlToImage\": \"https://images.livemint.com/img/2021/04/26/600x338/3c5caacc-9e05-11eb-bcc6-91c576c9961b_1618514778038_1619447315261.jpg\",\n" +
-            "      \"publishedAt\": \"2021-04-26T14:33:15Z\",\n" +
-            "      \"content\": \"MUMBAI :\\\\r\\\\nThe second wave of covid-19 in India, if left uncontrolled, could lead to prolonged restrictions on movement and supply chain disruptions with consequent inflationary pressures, the Reserve… [+3949 chars]\"\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"source\": {\n" +
-            "        \"id\": null,\n" +
-            "        \"name\": \"Hindustan Times\"\n" +
-            "      },\n" +
-            "      \"author\": \"hindustantimes.com\",\n" +
-            "      \"title\": \"Gap between Sputnik-V doses can be increased from 3 weeks to 3 months, say makers - Hindustan Times\",\n" +
-            "      \"description\": \"The makers of the vaccine, Gamaleya Research Centre, said that the interval may even prolong the effect of the vaccine and won't interfere with immune response spurred by the vaccine.\",\n" +
-            "      \"url\": \"https://www.hindustantimes.com/world-news/gap-between-sputnik-v-doses-can-be-increased-say-makers-101619445514281.html\",\n" +
-            "      \"urlToImage\": \"https://images.hindustantimes.com/img/2021/04/26/1600x900/2021-04-24T154931Z_720167739_RC2F2N9NS4ED_RTRMADP_3_HEALTH-CORONAVIRUS-VENEZUELA-RUSSIA_1619445749903_1619445973092.jpg\",\n" +
-            "      \"publishedAt\": \"2021-04-26T14:08:09Z\",\n" +
-            "      \"content\": \"The director of Russias Gamaleya Research Centre, which developed the Sputnik V vaccine against coronavirus disease (Covid-19),\"\n" +
-            "    }\n" +
-            "  ]\n" +
-            "}",
+            "    \"userId\": 1,\n" +
+            "    \"id\": 1,\n" +
+            "    \"title\": \"Test title 1\",\n" +
+            "    \"body\": \"Test title 1\"\n" +
+            "  }"
     )
-    @DELETE("v2/{newsId}/top-sport.json?")
-    suspend fun getSport(): NewsResponse
+    @GET("posts/{id}")
+    suspend fun getPostById(@Path("id") id: Int): PostListModelItem
 
-    companion object {
+    @Assume(
+        responseCode = 200,
+        response = "[\n" +
+            "  {\n" +
+            "    \"postId\": 1,\n" +
+            "    \"id\": 1,\n" +
+            "    \"name\": \"John Doe\",\n" +
+            "    \"email\": \"johndoe@gardner.biz\",\n" +
+            "    \"body\": \"Comment 1\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"postId\": 1,\n" +
+            "    \"id\": 2,\n" +
+            "    \"name\": \"Alice\",\n" +
+            "    \"email\": \"alice@sydney.com\",\n" +
+            "    \"body\": \"Comment 2\"\n" +
+            "  }\n" +
+            "]",
+        ignore = false
+    )
+    @GET("post/{id}/comments")
+    suspend fun getCommentsForPostId(@Path("id") id: Int): List<CommentModel>
 
-        operator fun invoke(): ApiService {
-
-            val logging = HttpLoggingInterceptor()
-            logging.setLevel(HttpLoggingInterceptor.Level.BODY)
-
-            val okHttpClient = OkHttpClient.Builder()
-                .addInterceptor(AssumeInterceptor("https://newsapi.org/"))
-                .addInterceptor(logging)
-                .build()
-
-            return Retrofit.Builder()
-                .baseUrl("https://newsapi.org/")
-                .client(okHttpClient)
-                .addConverterFactory(MoshiConverterFactory.create())
-                .build()
-                .create(ApiService::class.java)
-        }
-    }
+    @Assume(
+        response = "[\n" +
+            "  {\n" +
+            "    \"postId\": 1,\n" +
+            "    \"id\": 1,\n" +
+            "    \"name\": \"John Doe\",\n" +
+            "    \"email\": \"johndoe@gardner.biz\",\n" +
+            "    \"body\": \"Comment 1\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"postId\": 1,\n" +
+            "    \"id\": 2,\n" +
+            "    \"name\": \"Alice\",\n" +
+            "    \"email\": \"alice@sydney.com\",\n" +
+            "    \"body\": \"Comment 2\"\n" +
+            "  }\n" +
+            "]"
+    )
+    @GET("comments")
+    suspend fun queryCommentsForPostId(@Query("postId") id: Int): List<CommentModel>
 }
