@@ -1,19 +1,18 @@
 package com.aniketbhoite.assume
 
-
 import com.aniketbhoite.assume.processor.AssumeProcessor
 import com.google.common.truth.Truth.assertThat
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
 
-
 class AssumeProcessorTest {
-    //@Test
+    // @Test
     fun testAssumeProcessor() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
-                    "NewsApiService.kt", """
+                    "NewsApiService.kt",
+                    """
                             import retrofit2.http.GET
     import com.aniketbhoite.assume.annotations.Assume
 
@@ -43,7 +42,5 @@ class AssumeProcessorTest {
 
         val kClazz = result.classLoader.loadClass("AssumeClass")
         assertThat(kClazz)
-
-
     }
 }

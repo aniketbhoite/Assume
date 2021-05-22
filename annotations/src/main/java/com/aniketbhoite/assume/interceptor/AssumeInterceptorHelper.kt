@@ -10,7 +10,6 @@ internal class AssumeInterceptorHelper {
 
     companion object {
 
-
         val cachedAssumeResponse: HashMap<String, Pair<String, Int>> = hashMapOf()
 
         private val kClass: KClass<*> by lazy {
@@ -35,5 +34,4 @@ internal class AssumeInterceptorHelper {
             kClass.companionObjectInstance
         }
     }
-
 }
