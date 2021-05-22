@@ -1,0 +1,29 @@
+# This is a basic workflow to help you get started with Actions
+
+name: spotlessbot
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the main branc
+  pull_request:
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Static analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.3.3
+
+      - name: Set up our JDK environment
+        uses: actions/setup-java@v1.4.3
+        with:
+          java-version: 1.8
+
+      - name: Static Analysis
+        continue-on-error: false
+        run: ./gradlew spotlessCheck --stacktrace
