@@ -10,6 +10,13 @@ import retrofit2.http.Query
 interface ApiService {
 
     @Assume(
+        responseCode = 200,
+        response = "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+    )
+    @GET("posts/{id}")
+    suspend fun getPostById(@Path("id") id: Int): PostListModelItem
+
+    @Assume(
         response = "[\n" +
             "  {\n" +
             "    \"userId\": 1,\n" +
@@ -27,18 +34,6 @@ interface ApiService {
     )
     @GET("posts")
     suspend fun getPosts(): List<PostListModelItem>
-
-    @Assume(
-        responseCode = 200,
-        response = "{\n" +
-            "    \"userId\": 1,\n" +
-            "    \"id\": 1,\n" +
-            "    \"title\": \"Test title 1\",\n" +
-            "    \"body\": \"Test title 1\"\n" +
-            "  }"
-    )
-    @GET("posts/{id}")
-    suspend fun getPostById(@Path("id") id: Int): PostListModelItem
 
     @Assume(
         responseCode = 200,
@@ -70,7 +65,7 @@ interface ApiService {
             "    \"id\": 1,\n" +
             "    \"name\": \"John Doe\",\n" +
             "    \"email\": \"johndoe@gardner.biz\",\n" +
-            "    \"body\": \"Comment 1\"\n" +
+            "    \"body\": \"Comment 3\"\n" +
             "  },\n" +
             "  {\n" +
             "    \"postId\": 1,\n" +
