@@ -58,6 +58,7 @@ dependencies {
     testImplementation 'androidx.test:runner:1.4.0-beta01'
     testImplementation 'androidx.test.espresso:espresso-core:3.4.0-beta01'
 
-    implementation("com.squareup.okio:okio:3.0.0-alpha.4")
+    implementation "com.squareup.okio:okio:3.0.0-alpha.4"
+    testImplementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_reflect"
 
 }
