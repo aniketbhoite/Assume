@@ -50,6 +50,11 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
             return false
         }
 
+        messager.printMessage(
+            Diagnostic.Kind.NOTE,
+            "My annotation processor was called"
+        )
+
         val elements = roundEnv.getElementsAnnotatedWith(Assume::class.java)
 
         for (element in elements) {
