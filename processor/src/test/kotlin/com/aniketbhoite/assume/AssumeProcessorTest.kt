@@ -189,4 +189,156 @@ class AssumeProcessorTest {
         assertThat(responsePair.second is Int).isTrue()
         assertThat(responsePair.second == 200).isTrue()
     }
+
+    @Test
+    fun `AssumeProcessor failed because Assume annotation containing class was not interface`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+                        class NewsApiService {
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                             @GET("posts")
+                            suspend fun getPostById(): String {
+                               return ""
+                            }
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.COMPILATION_ERROR)
+        assertThat(result.messages).contains("error: method Parent must be Interface")
+    }
+
+    @Test
+    fun `AssumeProcessor will failed because Assume annotation applied on top level parent class`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+                        @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                        class NewsApiService {
+
+                             @GET("posts")
+                            suspend fun getPostById(): String {
+                               return ""
+                            }
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        /**
+         * The exit code for this will be KotlinCompilation.ExitCode.INTERNAL_ERROR because it fail while creating kotlinClassMetadata
+         * In above test case Class with Assume class does not have enclosing Element(means parent class)
+         * val metadata = interfaceElement.kotlinClassMetadata()
+         */
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.INTERNAL_ERROR)
+        assertThat(result.messages).contains(
+            "java.lang.NullPointerException\n" +
+                "\tat com.aniketbhoite.assume.processor.ProcessorUtilKt.kotlinClassMetadata(ProcessorUtil.kt:12)"
+        )
+    }
+
+    @Test
+    fun `AssumeProcessor will failed because Assume annotation applied on inner child class`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+                        class ParentClass {
+
+                            @Assume(
+                                    responseCode = 200,
+                                    response =
+                                    "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                                )
+                            class NewsApiService {
+
+                                 @GET("posts")
+                                suspend fun getPostById(): String {
+                                   return ""
+                                }
+                            }
+                        }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.COMPILATION_ERROR)
+        assertThat(result.messages).contains("error: method Parent must be Interface")
+    }
+
+    @Test
+    fun `AssumeProcessor will failed because Assume annotation applied variable`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+
+                        interface NewsApiService {
+
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                            val variable = ""
+
+                            @GET("posts")
+                            suspend fun getPostById(): String {
+                               return ""
+                            }
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.COMPILATION_ERROR)
+    }
 }
