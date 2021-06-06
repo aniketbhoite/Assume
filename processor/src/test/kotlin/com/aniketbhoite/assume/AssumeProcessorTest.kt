@@ -17,7 +17,7 @@ import kotlin.reflect.full.starProjectedType
 class AssumeProcessorTest {
 
     @Test
-    fun `AssumeProcessor exits test`() {
+    fun `AssumeProcessor invoked when annotated with Assume`() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
@@ -51,7 +51,7 @@ class AssumeProcessorTest {
     }
 
     @Test
-    fun `AssumeClass class created test`() {
+    fun `AssumeClass is generated when annotated with Assume`() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
@@ -87,7 +87,7 @@ class AssumeProcessorTest {
     }
 
     @Test
-    fun `Assume function created with correct name & returnType test`() {
+    fun `function generated with correct name and return type when annotated with Assume`() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
@@ -142,7 +142,7 @@ class AssumeProcessorTest {
     }
 
     @Test
-    fun `Assume generated response check test`() {
+    fun `generated function returns correct response and response code when annotated with Assume`() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
@@ -193,7 +193,7 @@ class AssumeProcessorTest {
     }
 
     @Test
-    fun `AssumeProcessor failed because Assume annotation containing class was not interface`() {
+    fun `compile time error when annotated function is not enclosed in interface`() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
@@ -227,7 +227,7 @@ class AssumeProcessorTest {
     }
 
     @Test
-    fun `AssumeProcessor will failed because Assume annotation applied on top level parent class`() {
+    fun `internal error when Assume annotation is applied to parent class`() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
@@ -270,7 +270,7 @@ class AssumeProcessorTest {
     }
 
     @Test
-    fun `AssumeProcessor will failed because Assume annotation applied on inner child class`() {
+    fun `compile time error when Assume annotation is applied on inner child class`() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
@@ -308,7 +308,7 @@ class AssumeProcessorTest {
     }
 
     @Test
-    fun `AssumeProcessor will failed because Assume annotation applied on variable`() {
+    fun `compile time error when Assume annotation is applied on variable`() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
@@ -345,7 +345,7 @@ class AssumeProcessorTest {
     }
 
     @Test
-    fun `Assume generated response check for all retrofit methods test`() {
+    fun `check method generation & response for all retrofit methods when annotated with Assume`() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
@@ -514,7 +514,7 @@ class AssumeProcessorTest {
     }
 
     @Test
-    fun `Assume default response code 200 check`() {
+    fun `get 200 as default response code for Assume annotated API method`() {
 
         val result = KotlinCompilation().apply {
             sources = listOf(
@@ -562,7 +562,7 @@ class AssumeProcessorTest {
     }
 
     @Test
-    fun `Ignore true API method should be skipped and if no other API to Assume then Assume Class should not be created test`() {
+    fun `skipped method & class generation for single api with ignored`() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
@@ -599,7 +599,7 @@ class AssumeProcessorTest {
     }
 
     @Test
-    fun `Ignore true API method should be skipped and but if other API to Assume then its method be created test`() {
+    fun `skipped method generation when ignored`() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
@@ -671,7 +671,7 @@ class AssumeProcessorTest {
     }
 
     @Test
-    fun `API with Path variable response check`() {
+    fun `correct method name, generated annotation & response for API with Path variable`() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
