@@ -4,6 +4,7 @@ import com.aniketbhoite.assume.processor.AssumeProcessor
 import com.google.common.truth.Truth.assertThat
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
+import org.jetbrains.kotlin.descriptors.runtime.components.tryLoadClass
 import org.junit.Test
 import kotlin.reflect.KTypeProjection
 import kotlin.reflect.full.companionObject
@@ -557,5 +558,117 @@ class AssumeProcessorTest {
 
         assertThat(responsePair.second is Int).isTrue()
         assertThat(responsePair.second).isEqualTo(200)
+    }
+
+    @Test
+    fun `Ignore true API method should be skipped and if not other API to Assume then Assume Class should not be created test`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+                        interface NewsApiService {
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}",
+                                ignore = true
+                            )
+                             @GET("posts")
+                            suspend fun getPostById(): String
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+        assertThat(result.messages).contains("Assume annotation processor was called")
+
+        val kClazz =
+            result.classLoader.tryLoadClass("com.aniketbhoite.assume.mocker.AssumeClass")?.kotlin
+        assertThat(kClazz).isNull()
+    }
+
+
+
+    @Test
+    fun `Ignore true API method should be skipped and but if other API to Assume then its method be created test`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+                        import retrofit2.http.POST
+                        import retrofit2.http.Query
+
+                        interface NewsApiService {
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                             @GET("posts")
+                            suspend fun getPostById(): String
+
+
+                            @Assume(
+                                response = "[\n" +
+                                    "  {\n" +
+                                    "    \"postId\": 1,\n" +
+                                    "    \"id\": 1,\n" +
+                                    "    \"name\": \"John Doe\",\n" +
+                                    "    \"email\": \"johndoe@gardner.biz\",\n" +
+                                    "    \"body\": \"Comment 3\"\n" +
+                                    "  },\n" +
+                                    "  {\n" +
+                                    "    \"postId\": 1,\n" +
+                                    "    \"id\": 2,\n" +
+                                    "    \"name\": \"Alice\",\n" +
+                                    "    \"email\": \"alice@sydney.com\",\n" +
+                                    "    \"body\": \"Comment 2\"\n" +
+                                    "  }\n" +
+                                    "]",
+                                    ignore = true
+                            )
+                            @POST("comments")
+                            suspend fun queryCommentsForPostId(@Query("postId") id: Int): Any
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+        assertThat(result.messages).contains("Assume annotation processor was called")
+
+        val kClazz =
+            result.classLoader.loadClass("com.aniketbhoite.assume.mocker.AssumeClass").kotlin
+        assertThat(kClazz).isNotNull()
+
+        val kClazzCompanionObject = kClazz.companionObject
+        val kClazzCompanionObjectInstance = kClazz.companionObjectInstance
+        assertThat(kClazzCompanionObject)
+
+        assertThat(kClazzCompanionObject?.functions?.size == 0).isFalse()
+
+        val kGetFunc = kClazzCompanionObject?.functions?.find { it.name == "getposts" }
+        assertThat(kGetFunc).isNotNull()
+
+        val kPostFunc = kClazzCompanionObject?.functions?.find { it.name == "getcomments" }
+        assertThat(kPostFunc).isNull()
     }
 }
