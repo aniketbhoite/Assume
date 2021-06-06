@@ -20,7 +20,7 @@ Add dependencies to your module's build.gradle file:
 
 ```
 
-def assume_version = "1.0"
+def assume_version = "1.1"
 
 // kaptDebug to reduce unnecessary Annotation processing for release build generations
 kaptDebug "com.github.aniketbhoite.Assume:processor:$assume_version"
