@@ -122,7 +122,7 @@ class AssumeProcessorTest {
         val kClazzCompanionObject = kClazz.companionObject
         assertThat(kClazzCompanionObject)
 
-        assertThat(kClazzCompanionObject?.functions?.size == 0).isFalse()
+        assertThat(kClazzCompanionObject?.functions?.size).isNotEqualTo(0)
         val kFunc = kClazzCompanionObject?.functions?.find { it.name == "getposts" }
         assertThat(kFunc).isNotNull()
 
@@ -136,7 +136,7 @@ class AssumeProcessorTest {
 
         val pairReturnType = pairClass.createType(listOf(stringProjection, intProjection))
 
-        assertThat(kFunc?.returnType == pairReturnType).isTrue()
+        assertThat(kFunc?.returnType).isEqualTo(pairReturnType)
     }
 
     @Test
@@ -183,11 +183,11 @@ class AssumeProcessorTest {
 
         val responsePair = kFunc?.call(kClazz.companionObjectInstance) as Pair<*, *>
 
-        assertThat(responsePair.first is String).isTrue()
-        assertThat(responsePair.first == "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}").isTrue()
+        assertThat(responsePair.first).isInstanceOf(String::class.java)
+        assertThat(responsePair.first).isEqualTo("{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}")
 
         assertThat(responsePair.second is Int).isTrue()
-        assertThat(responsePair.second == 200).isTrue()
+        assertThat(responsePair.second).isEqualTo(200)
     }
 
     @Test
@@ -207,8 +207,8 @@ class AssumeProcessorTest {
                                 "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
                             )
                              @GET("posts")
-                            suspend fun getPostById(): String {
-                               return ""
+                            fun getPostById(): String {
+                                return ""
                             }
                 }
             """
@@ -242,7 +242,7 @@ class AssumeProcessorTest {
                         class NewsApiService {
 
                              @GET("posts")
-                            suspend fun getPostById(): String {
+                            fun getPostById(): String {
                                return ""
                             }
                 }
@@ -287,7 +287,7 @@ class AssumeProcessorTest {
                             class NewsApiService {
 
                                  @GET("posts")
-                                suspend fun getPostById(): String {
+                                fun getPostById(): String {
                                    return ""
                                 }
                             }
@@ -306,7 +306,7 @@ class AssumeProcessorTest {
     }
 
     @Test
-    fun `AssumeProcessor will failed because Assume annotation applied variable`() {
+    fun `AssumeProcessor will failed because Assume annotation applied on variable`() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
@@ -340,5 +340,222 @@ class AssumeProcessorTest {
         }.compile()
 
         assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.COMPILATION_ERROR)
+    }
+
+    @Test
+    fun `Assume generated response check for all retrofit methods test`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+                        import retrofit2.http.POST
+                        import retrofit2.http.Query
+                        import retrofit2.http.PUT
+                        import retrofit2.http.DELETE
+                        import retrofit2.http.PATCH
+
+                        interface NewsApiService {
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                             @GET("posts")
+                            suspend fun getPostById(): String
+
+
+                            @Assume(
+                                response = "[\n" +
+                                    "  {\n" +
+                                    "    \"postId\": 1,\n" +
+                                    "    \"id\": 1,\n" +
+                                    "    \"name\": \"John Doe\",\n" +
+                                    "    \"email\": \"johndoe@gardner.biz\",\n" +
+                                    "    \"body\": \"Comment 3\"\n" +
+                                    "  },\n" +
+                                    "  {\n" +
+                                    "    \"postId\": 1,\n" +
+                                    "    \"id\": 2,\n" +
+                                    "    \"name\": \"Alice\",\n" +
+                                    "    \"email\": \"alice@sydney.com\",\n" +
+                                    "    \"body\": \"Comment 2\"\n" +
+                                    "  }\n" +
+                                    "]"
+                            )
+                            @POST("comments")
+                            suspend fun queryCommentsForPostId(@Query("postId") id: Int): Any
+
+
+                            @Assume(
+                                responseCode = 403,
+                                response =
+                                "{\"userId\": 2, \"id\": 2, \"title\": \"Test title 2\", \"body\": \"Test title 2-2\"}"
+                            )
+                            @PUT("posts_put")
+                            suspend fun getPost2ById(): Any
+
+
+                            @Assume(
+                                response =
+                                "{\"userId\": 3, \"id\": 3, \"title\": \"Test title 3\", \"body\": \"Test title 2-3\"}"
+                            )
+                            @DELETE("posts-delete")
+                            suspend fun getPost3ById(): Any
+
+
+
+                            @Assume(
+                                response =
+                                "{\"userId\": 3, \"id\": 3, \"title\": \"Test title 3\", \"body\": \"Test title 2-3\"}"
+                            )
+                            @PATCH("posts/patch")
+                            suspend fun getPost4ById(): Any
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+        assertThat(result.messages).contains("Assume annotation processor was called")
+
+        val kClazz =
+            result.classLoader.loadClass("com.aniketbhoite.assume.mocker.AssumeClass").kotlin
+        assertThat(kClazz)
+
+        val kClazzCompanionObject = kClazz.companionObject
+        val kClazzCompanionObjectInstance = kClazz.companionObjectInstance
+        assertThat(kClazzCompanionObject)
+
+        assertThat(kClazzCompanionObject?.functions?.size == 0).isFalse()
+
+        val kGetFunc = kClazzCompanionObject?.functions?.find { it.name == "getposts" }
+        assertThat(kGetFunc).isNotNull()
+
+        val getResponsePair = kGetFunc?.call(kClazzCompanionObjectInstance) as Pair<*, *>
+
+        assertThat(getResponsePair.first).isInstanceOf(String::class.java)
+        assertThat(getResponsePair.first).isEqualTo("{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}")
+
+        assertThat(getResponsePair.second is Int).isTrue()
+        assertThat(getResponsePair.second).isEqualTo(200)
+
+        val kPostFunc = kClazzCompanionObject.functions.find { it.name == "getcomments" }
+        assertThat(kPostFunc).isNotNull()
+
+        val postResponsePair = kPostFunc?.call(kClazzCompanionObjectInstance) as Pair<*, *>
+
+        assertThat(postResponsePair.first).isInstanceOf(String::class.java)
+        assertThat(
+            (postResponsePair.first as String).trim()
+        ).isEqualTo(
+            "[\n" +
+                "  {\n" +
+                "    \"postId\": 1,\n" +
+                "    \"id\": 1,\n" +
+                "    \"name\": \"John Doe\",\n" +
+                "    \"email\": \"johndoe@gardner.biz\",\n" +
+                "    \"body\": \"Comment 3\"\n" +
+                "  },\n" +
+                "  {\n" +
+                "    \"postId\": 1,\n" +
+                "    \"id\": 2,\n" +
+                "    \"name\": \"Alice\",\n" +
+                "    \"email\": \"alice@sydney.com\",\n" +
+                "    \"body\": \"Comment 2\"\n" +
+                "  }\n" +
+                "]"
+        )
+
+        assertThat(postResponsePair.second is Int).isTrue()
+        assertThat(postResponsePair.second).isEqualTo(200)
+
+        val kPutFunc = kClazzCompanionObject.functions.find { it.name == "getposts_put" }
+        assertThat(kPutFunc).isNotNull()
+
+        val putResponsePair = kPutFunc?.call(kClazzCompanionObjectInstance) as Pair<*, *>
+
+        assertThat(putResponsePair.first).isInstanceOf(String::class.java)
+        assertThat(putResponsePair.first).isEqualTo("{\"userId\": 2, \"id\": 2, \"title\": \"Test title 2\", \"body\": \"Test title 2-2\"}")
+
+        assertThat(putResponsePair.second is Int).isTrue()
+        assertThat(putResponsePair.second).isEqualTo(403)
+
+        val kDeleteFunc = kClazzCompanionObject.functions.find { it.name == "getpostsDASHdelete" }
+        assertThat(kDeleteFunc).isNotNull()
+
+        val deleteResponsePair = kDeleteFunc?.call(kClazzCompanionObjectInstance) as Pair<*, *>
+
+        assertThat(deleteResponsePair.first).isInstanceOf(String::class.java)
+        assertThat(deleteResponsePair.first).isEqualTo("{\"userId\": 3, \"id\": 3, \"title\": \"Test title 3\", \"body\": \"Test title 2-3\"}")
+
+        assertThat(deleteResponsePair.second is Int).isTrue()
+        assertThat(deleteResponsePair.second).isEqualTo(200)
+
+        val kPatchFunc = kClazzCompanionObject.functions.find { it.name == "getpostsSLASHpatch" }
+        assertThat(kPatchFunc).isNotNull()
+
+        val patchResponsePair = kPatchFunc?.call(kClazzCompanionObjectInstance) as Pair<*, *>
+
+        assertThat(patchResponsePair.first).isInstanceOf(String::class.java)
+        assertThat(patchResponsePair.first).isEqualTo("{\"userId\": 3, \"id\": 3, \"title\": \"Test title 3\", \"body\": \"Test title 2-3\"}")
+
+        assertThat(patchResponsePair.second is Int).isTrue()
+        assertThat(patchResponsePair.second).isEqualTo(200)
+    }
+
+    @Test
+    fun `Assume default response code 200 check`() {
+
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+                        interface NewsApiService {
+                            @Assume(
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                             @GET("posts")
+                            suspend fun getPostById(): String
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+        assertThat(result.messages).contains("Assume annotation processor was called")
+
+        val kClazz =
+            result.classLoader.loadClass("com.aniketbhoite.assume.mocker.AssumeClass").kotlin
+        assertThat(kClazz)
+
+        val kClazzCompanionObject = kClazz.companionObject
+        assertThat(kClazzCompanionObject)
+
+        assertThat(kClazzCompanionObject?.functions?.size == 0).isFalse()
+        val kFunc = kClazzCompanionObject?.functions?.find { it.name == "getposts" }
+        assertThat(kFunc).isNotNull()
+
+        val responsePair = kFunc?.call(kClazz.companionObjectInstance) as Pair<*, *>
+
+        assertThat(responsePair.second is Int).isTrue()
+        assertThat(responsePair.second).isEqualTo(200)
     }
 }
