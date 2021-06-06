@@ -659,7 +659,6 @@ class AssumeProcessorTest {
         assertThat(kClazz).isNotNull()
 
         val kClazzCompanionObject = kClazz.companionObject
-        val kClazzCompanionObjectInstance = kClazz.companionObjectInstance
         assertThat(kClazzCompanionObject)
 
         assertThat(kClazzCompanionObject?.functions?.size == 0).isFalse()

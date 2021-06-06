@@ -1,7 +1,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
     ext{
-        kotlin_version = "1.4.32"
+        kotlin_version = "1.5.10"
         okhttp3_version = "3.14.9"
         kotlin_reflect = "1.5.10"
     }
