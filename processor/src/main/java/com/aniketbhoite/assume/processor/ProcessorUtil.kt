@@ -11,7 +11,6 @@ fun Element.kotlinClassMetadata(): KotlinClassMetadata? {
         KotlinClassHeader(
             metadataAnnotation.kind,
             metadataAnnotation.metadataVersion,
-            metadataAnnotation.bytecodeVersion,
             metadataAnnotation.data1,
             metadataAnnotation.data2,
             metadataAnnotation.extraString,
