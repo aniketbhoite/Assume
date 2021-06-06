@@ -1,5 +1,6 @@
 package com.aniketbhoite.assume
 
+import com.aniketbhoite.assume.annotations.PathIndexes
 import com.aniketbhoite.assume.processor.AssumeProcessor
 import com.google.common.truth.Truth.assertThat
 import com.tschuchort.compiletesting.KotlinCompilation
@@ -561,7 +562,7 @@ class AssumeProcessorTest {
     }
 
     @Test
-    fun `Ignore true API method should be skipped and if not other API to Assume then Assume Class should not be created test`() {
+    fun `Ignore true API method should be skipped and if no other API to Assume then Assume Class should not be created test`() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
@@ -596,8 +597,6 @@ class AssumeProcessorTest {
             result.classLoader.tryLoadClass("com.aniketbhoite.assume.mocker.AssumeClass")?.kotlin
         assertThat(kClazz).isNull()
     }
-
-
 
     @Test
     fun `Ignore true API method should be skipped and but if other API to Assume then its method be created test`() {
@@ -670,5 +669,68 @@ class AssumeProcessorTest {
 
         val kPostFunc = kClazzCompanionObject?.functions?.find { it.name == "getcomments" }
         assertThat(kPostFunc).isNull()
+    }
+
+    @Test
+    fun `API with Path variable response check`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+                        import retrofit2.http.Path
+
+                        interface NewsApiService {
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                            @GET("posts/{id}")
+                            suspend fun getPostById(@Path("id") id: Int): String
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+        assertThat(result.messages).contains("Assume annotation processor was called")
+
+        val kClazz =
+            result.classLoader.loadClass("com.aniketbhoite.assume.mocker.AssumeClass").kotlin
+        assertThat(kClazz)
+
+        val kClazzCompanionObject = kClazz.companionObject
+        assertThat(kClazzCompanionObject)
+
+        assertThat(kClazzCompanionObject?.functions?.size == 0).isFalse()
+        val kFunc = kClazzCompanionObject?.functions?.find { it.name == "getpostsSLASHAS_PATH_AS" }
+        assertThat(kFunc).isNotNull()
+
+        val funcAnnotations = kFunc?.annotations
+        assertThat(funcAnnotations).isNotNull()
+        assertThat(funcAnnotations?.size).isNotEqualTo(0)
+
+        val pathIndexes = funcAnnotations?.find { it is PathIndexes }
+        assertThat(pathIndexes).isNotNull()
+        val indexes = (pathIndexes as PathIndexes).index
+        assertThat(indexes).isNotNull()
+        assertThat(indexes.size).isEqualTo(1)
+        assertThat(indexes).isEqualTo(intArrayOf(1))
+
+        val responsePair = kFunc.call(kClazz.companionObjectInstance) as Pair<*, *>
+
+        assertThat(responsePair.first).isInstanceOf(String::class.java)
+        assertThat(responsePair.first).isEqualTo("{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}")
+
+        assertThat(responsePair.second is Int).isTrue()
+        assertThat(responsePair.second).isEqualTo(200)
     }
 }
