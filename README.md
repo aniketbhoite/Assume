@@ -20,7 +20,7 @@ Add dependencies to your module's build.gradle file:
 
 ```
 
-def assume_version = "0.0-beta02"
+def assume_version = "1.0"
 
 // kaptDebug to reduce unnecessary Annotation processing for release build generations
 kaptDebug "com.github.aniketbhoite.Assume:processor:$assume_version"
@@ -47,6 +47,15 @@ Add @Assume annotation to API method with wanted response, responseCode is optio
 @POST("v2/top-headlines")
 suspend fun getHeadline(): NewsResponse
 
+
+@Assume(
+	responseCode = 200,
+        response = "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}",
+	ignore = true  //To get the actual response from network & skip Assume
+)
+@GET("posts/{id}")
+suspend fun getPostById(@Path("id") id: Int): PostListModelItem
+
 ```
 
 Add **AssumeInterceptor** inside the Okhttp3 client
@@ -65,6 +74,7 @@ You should be good to go.👍🏽
 
 1. Saves hassles of modifying interceptors to mock response every time
 2. Can mock multiple APIs
+3. Assume support API with dynamic path variables
 
 ### Gotchas to keep in mind:
 
