@@ -4,7 +4,6 @@ import kotlinx.metadata.jvm.KotlinClassHeader
 import kotlinx.metadata.jvm.KotlinClassMetadata
 import javax.lang.model.element.Element
 
-
 fun Element.kotlinClassMetadata(): KotlinClassMetadata? {
     val metadataAnnotation = this.getAnnotation(Metadata::class.java)
 
@@ -12,7 +11,6 @@ fun Element.kotlinClassMetadata(): KotlinClassMetadata? {
         KotlinClassHeader(
             metadataAnnotation.kind,
             metadataAnnotation.metadataVersion,
-            metadataAnnotation.bytecodeVersion,
             metadataAnnotation.data1,
             metadataAnnotation.data2,
             metadataAnnotation.extraString,

@@ -1,49 +1,735 @@
 package com.aniketbhoite.assume
 
-
+import com.aniketbhoite.assume.annotations.PathIndexes
 import com.aniketbhoite.assume.processor.AssumeProcessor
 import com.google.common.truth.Truth.assertThat
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
-
+import org.jetbrains.kotlin.descriptors.runtime.components.tryLoadClass
+import org.junit.Test
+import kotlin.reflect.KTypeProjection
+import kotlin.reflect.full.companionObject
+import kotlin.reflect.full.companionObjectInstance
+import kotlin.reflect.full.createType
+import kotlin.reflect.full.functions
+import kotlin.reflect.full.starProjectedType
 
 class AssumeProcessorTest {
-    //@Test
-    fun testAssumeProcessor() {
+
+    @Test
+    fun `AssumeProcessor invoked when annotated with Assume`() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
-                    "NewsApiService.kt", """
-                            import retrofit2.http.GET
-    import com.aniketbhoite.assume.annotations.Assume
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
 
                         interface NewsApiService {
-                            @GET("top-headlines?pageSize=100")
                             @Assume(
                                 responseCode = 200,
                                 response =
-                                "{\"status\":\"ok\",\"totalResults\":70,\"articles\":[{\"source\":{\"id\":null,\"name\":\"NYC\"},\"author\":\"Bloomberg\",\"title\":\"Rich Indians flee by private jet as Covid-19 infections spiral - Hindustan Times\",\"description\":\"With reports of hospital bed and drug shortages sweeping social media, Indian tycoons and others able to afford fares running into millions of rupees are booking flights to boltholes in Europe, the Middle East and the Indian Ocean.\",\"url\":\"https://www.hindustantimes.com/india-news/rich-indians-flee-by-private-jet-as-covid-19-infections-spiral-101619448267544.html\",\"urlToImage\":\"https://images.hindustantimes.com/img/2021/04/26/1600x900/approaches-american-airlines-national-landing-airport-washington_c3337c54-5f20-11e9-bb04-32a78a0b0bbe_1619448509890.jpg\",\"publishedAt\":\"2021-04-26T14:50:40Z\",\"content\":\"Indias mounting crisis surrounding a surge in coronavirus infections is prompting wealthy families to flee the country by private jet.\\r\\nWith reports of hospital bed and drug shortages sweeping social… [+2429 chars]\"},{\"source\":{\"id\":null,\"name\":\"Livemint\"},\"author\":\"Shayan Ghosh\",\"title\":\"If left unchecked, second Covid-19 wave could be inflationary: RBI - Mint\",\"description\":\"Pandemic protocols, speedier vaccination, ramping up hospital and ancillary capacity, and remaining resolutely focused on a post-pandemic future of strong and sustainable growth with macroeconomic, financial stability is the way forward, says RBI\",\"url\":\"https://www.livemint.com/economy/left-unchecked-second-coivd-19-wave-could-be-inflationary-rbi-11619447208219.html\",\"urlToImage\":\"https://images.livemint.com/img/2021/04/26/600x338/3c5caacc-9e05-11eb-bcc6-91c576c9961b_1618514778038_1619447315261.jpg\",\"publishedAt\":\"2021-04-26T14:33:15Z\",\"content\":\"MUMBAI :\\r\\nThe second wave of covid-19 in India, if left uncontrolled, could lead to prolonged restrictions on movement and supply chain disruptions with consequent inflationary pressures, the Reserve… [+3949 chars]\"},{\"source\":{\"id\":null,\"name\":\"Hindustan Times\"},\"author\":\"hindustantimes.com\",\"title\":\"Gap between Sputnik-V doses can be increased from 3 weeks to 3 months, say makers - Hindustan Times\",\"description\":\"The makers of the vaccine, Gamaleya Research Centre, said that the interval may even prolong the effect of the vaccine and won't interfere with immune response spurred by the vaccine.\",\"url\":\"https://www.hindustantimes.com/world-news/gap-between-sputnik-v-doses-can-be-increased-say-makers-101619445514281.html\",\"urlToImage\":\"https://images.hindustantimes.com/img/2021/04/26/1600x900/2021-04-24T154931Z_720167739_RC2F2N9NS4ED_RTRMADP_3_HEALTH-CORONAVIRUS-VENEZUELA-RUSSIA_1619445749903_1619445973092.jpg\",\"publishedAt\":\"2021-04-26T14:08:09Z\",\"content\":\"The director of Russias Gamaleya Research Centre, which developed the Sputnik V vaccine against coronavirus disease (Covid-19), said it is possible to increase the minimum interval between the first … [+1834 chars]\"},{\"source\":{\"id\":null,\"name\":\"CarToq.com\"},\"author\":\"Paarth Khatri\",\"title\":\"Suzuki launches the new generation Hayabusa for Rs. 16.40 lakhs ex-showroom - CarToq.com\",\"description\":\"Suzuki has finally launched the much-awaited Hayabusa in the Indian market. The motorcycle has been priced at Rs. 16.40 lakhs ex-showroom which is Rs. 3 lakhs pricier than the previous one that was priced at Rs. 13.75 lakhs ex-showroom. The booking amount for…\",\"url\":\"https://www.cartoq.com/suzuki-launches-the-new-generation-hayabusa-for-rs-16-40-lakhs-ex-showroom/\",\"urlToImage\":\"https://www.cartoq.com/wp-content/uploads/2021/04/Suzuki-Hayabusa-featured-1019x530.jpg\",\"publishedAt\":\"2021-04-26T13:57:14Z\",\"content\":\"Suzuki has finally launched the much-awaited Hayabusa in the Indian market. The motorcycle has been priced at Rs. 16.40 lakhs ex-showroom which is Rs. 3 lakhs pricier than the previous one that was p… [+3284 chars]\"}]}"
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
                             )
-                            fun getArticlesByCateGoryAsync(
-                            ): String
+                             @GET("posts")
+                            suspend fun getPostById(): String
                 }
             """
                 )
             )
 
-//            inheritClassPath = true
             annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
             messageOutputStream = System.out
         }.compile()
 
         assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
 
         // Test diagnostic output of compiler
-//        assertThat(result.messages).contains("My annotation processor was called")
+        assertThat(result.messages).contains("Assume annotation processor was called")
+    }
 
-        val kClazz = result.classLoader.loadClass("AssumeClass")
+    @Test
+    fun `AssumeClass is generated when annotated with Assume`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+                        interface NewsApiService {
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                             @GET("posts")
+                            suspend fun getPostById(): String
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+        assertThat(result.messages).contains("Assume annotation processor was called")
+
+        val kClazz =
+            result.classLoader.loadClass("com.aniketbhoite.assume.mocker.AssumeClass").kotlin
+        assertThat(kClazz)
+    }
+
+    @Test
+    fun `function generated with correct name and return type when annotated with Assume`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+                        interface NewsApiService {
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                             @GET("posts")
+                            suspend fun getPostById(): String
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+        assertThat(result.messages).contains("Assume annotation processor was called")
+
+        val kClazz =
+            result.classLoader.loadClass("com.aniketbhoite.assume.mocker.AssumeClass").kotlin
         assertThat(kClazz)
 
+        val kClazzCompanionObject = kClazz.companionObject
+        assertThat(kClazzCompanionObject)
 
+        assertThat(kClazzCompanionObject?.functions?.size).isNotEqualTo(0)
+        val kFunc = kClazzCompanionObject?.functions?.find { it.name == "getposts" }
+        assertThat(kFunc).isNotNull()
+
+        val nonNullStringType = String::class.starProjectedType
+        val nonNullIntType = Int::class.starProjectedType
+
+        val stringProjection = KTypeProjection.invariant(nonNullStringType)
+        val intProjection = KTypeProjection.invariant(nonNullIntType)
+
+        val pairClass = Pair::class
+
+        val pairReturnType = pairClass.createType(listOf(stringProjection, intProjection))
+
+        assertThat(kFunc?.returnType).isEqualTo(pairReturnType)
+    }
+
+    @Test
+    fun `generated function returns correct response and response code when annotated with Assume`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+                        interface NewsApiService {
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                             @GET("posts")
+                            suspend fun getPostById(): String
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+        assertThat(result.messages).contains("Assume annotation processor was called")
+
+        val kClazz =
+            result.classLoader.loadClass("com.aniketbhoite.assume.mocker.AssumeClass").kotlin
+        assertThat(kClazz)
+
+        val kClazzCompanionObject = kClazz.companionObject
+        assertThat(kClazzCompanionObject)
+
+        assertThat(kClazzCompanionObject?.functions?.size == 0).isFalse()
+        val kFunc = kClazzCompanionObject?.functions?.find { it.name == "getposts" }
+        assertThat(kFunc).isNotNull()
+
+        val responsePair = kFunc?.call(kClazz.companionObjectInstance) as Pair<*, *>
+
+        assertThat(responsePair.first).isInstanceOf(String::class.java)
+        assertThat(responsePair.first).isEqualTo("{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}")
+
+        assertThat(responsePair.second is Int).isTrue()
+        assertThat(responsePair.second).isEqualTo(200)
+    }
+
+    @Test
+    fun `compile time error when annotated function is not enclosed in interface`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+                        class NewsApiService {
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                             @GET("posts")
+                            fun getPostById(): String {
+                                return ""
+                            }
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.COMPILATION_ERROR)
+        assertThat(result.messages).contains("error: method Parent must be Interface")
+    }
+
+    @Test
+    fun `internal error when Assume annotation is applied to parent class`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+                        @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                        class NewsApiService {
+
+                             @GET("posts")
+                            fun getPostById(): String {
+                               return ""
+                            }
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        /**
+         * The exit code for this will be KotlinCompilation.ExitCode.INTERNAL_ERROR because it fail while creating kotlinClassMetadata
+         * In above test case Class with Assume class does not have enclosing Element(means parent class)
+         * val metadata = interfaceElement.kotlinClassMetadata()
+         */
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.INTERNAL_ERROR)
+        assertThat(result.messages).contains(
+            "java.lang.NullPointerException\n" +
+                "\tat com.aniketbhoite.assume.processor.ProcessorUtilKt.kotlinClassMetadata(ProcessorUtil.kt:12)"
+        )
+    }
+
+    @Test
+    fun `compile time error when Assume annotation is applied on inner child class`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+                        class ParentClass {
+
+                            @Assume(
+                                    responseCode = 200,
+                                    response =
+                                    "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                                )
+                            class NewsApiService {
+
+                                 @GET("posts")
+                                fun getPostById(): String {
+                                   return ""
+                                }
+                            }
+                        }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.COMPILATION_ERROR)
+        assertThat(result.messages).contains("error: method Parent must be Interface")
+    }
+
+    @Test
+    fun `compile time error when Assume annotation is applied on variable`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+
+                        interface NewsApiService {
+
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                            val variable = ""
+
+                            @GET("posts")
+                            suspend fun getPostById(): String {
+                               return ""
+                            }
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.COMPILATION_ERROR)
+    }
+
+    @Test
+    fun `check method generation & response for all retrofit methods when annotated with Assume`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+                        import retrofit2.http.POST
+                        import retrofit2.http.Query
+                        import retrofit2.http.PUT
+                        import retrofit2.http.DELETE
+                        import retrofit2.http.PATCH
+
+                        interface NewsApiService {
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                             @GET("posts")
+                            suspend fun getPostById(): String
+
+
+                            @Assume(
+                                response = "[\n" +
+                                    "  {\n" +
+                                    "    \"postId\": 1,\n" +
+                                    "    \"id\": 1,\n" +
+                                    "    \"name\": \"John Doe\",\n" +
+                                    "    \"email\": \"johndoe@gardner.biz\",\n" +
+                                    "    \"body\": \"Comment 3\"\n" +
+                                    "  },\n" +
+                                    "  {\n" +
+                                    "    \"postId\": 1,\n" +
+                                    "    \"id\": 2,\n" +
+                                    "    \"name\": \"Alice\",\n" +
+                                    "    \"email\": \"alice@sydney.com\",\n" +
+                                    "    \"body\": \"Comment 2\"\n" +
+                                    "  }\n" +
+                                    "]"
+                            )
+                            @POST("comments")
+                            suspend fun queryCommentsForPostId(@Query("postId") id: Int): Any
+
+
+                            @Assume(
+                                responseCode = 403,
+                                response =
+                                "{\"userId\": 2, \"id\": 2, \"title\": \"Test title 2\", \"body\": \"Test title 2-2\"}"
+                            )
+                            @PUT("posts_put")
+                            suspend fun getPost2ById(): Any
+
+
+                            @Assume(
+                                response =
+                                "{\"userId\": 3, \"id\": 3, \"title\": \"Test title 3\", \"body\": \"Test title 2-3\"}"
+                            )
+                            @DELETE("posts-delete")
+                            suspend fun getPost3ById(): Any
+
+
+
+                            @Assume(
+                                response =
+                                "{\"userId\": 3, \"id\": 3, \"title\": \"Test title 3\", \"body\": \"Test title 2-3\"}"
+                            )
+                            @PATCH("posts/patch")
+                            suspend fun getPost4ById(): Any
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+        assertThat(result.messages).contains("Assume annotation processor was called")
+
+        val kClazz =
+            result.classLoader.loadClass("com.aniketbhoite.assume.mocker.AssumeClass").kotlin
+        assertThat(kClazz)
+
+        val kClazzCompanionObject = kClazz.companionObject
+        val kClazzCompanionObjectInstance = kClazz.companionObjectInstance
+        assertThat(kClazzCompanionObject)
+
+        assertThat(kClazzCompanionObject?.functions?.size == 0).isFalse()
+
+        val kGetFunc = kClazzCompanionObject?.functions?.find { it.name == "getposts" }
+        assertThat(kGetFunc).isNotNull()
+
+        val getResponsePair = kGetFunc?.call(kClazzCompanionObjectInstance) as Pair<*, *>
+
+        assertThat(getResponsePair.first).isInstanceOf(String::class.java)
+        assertThat(getResponsePair.first).isEqualTo("{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}")
+
+        assertThat(getResponsePair.second is Int).isTrue()
+        assertThat(getResponsePair.second).isEqualTo(200)
+
+        val kPostFunc = kClazzCompanionObject.functions.find { it.name == "getcomments" }
+        assertThat(kPostFunc).isNotNull()
+
+        val postResponsePair = kPostFunc?.call(kClazzCompanionObjectInstance) as Pair<*, *>
+
+        assertThat(postResponsePair.first).isInstanceOf(String::class.java)
+        assertThat(
+            (postResponsePair.first as String).trim()
+        ).isEqualTo(
+            "[\n" +
+                "  {\n" +
+                "    \"postId\": 1,\n" +
+                "    \"id\": 1,\n" +
+                "    \"name\": \"John Doe\",\n" +
+                "    \"email\": \"johndoe@gardner.biz\",\n" +
+                "    \"body\": \"Comment 3\"\n" +
+                "  },\n" +
+                "  {\n" +
+                "    \"postId\": 1,\n" +
+                "    \"id\": 2,\n" +
+                "    \"name\": \"Alice\",\n" +
+                "    \"email\": \"alice@sydney.com\",\n" +
+                "    \"body\": \"Comment 2\"\n" +
+                "  }\n" +
+                "]"
+        )
+
+        assertThat(postResponsePair.second is Int).isTrue()
+        assertThat(postResponsePair.second).isEqualTo(200)
+
+        val kPutFunc = kClazzCompanionObject.functions.find { it.name == "getposts_put" }
+        assertThat(kPutFunc).isNotNull()
+
+        val putResponsePair = kPutFunc?.call(kClazzCompanionObjectInstance) as Pair<*, *>
+
+        assertThat(putResponsePair.first).isInstanceOf(String::class.java)
+        assertThat(putResponsePair.first).isEqualTo("{\"userId\": 2, \"id\": 2, \"title\": \"Test title 2\", \"body\": \"Test title 2-2\"}")
+
+        assertThat(putResponsePair.second is Int).isTrue()
+        assertThat(putResponsePair.second).isEqualTo(403)
+
+        val kDeleteFunc = kClazzCompanionObject.functions.find { it.name == "getpostsDASHdelete" }
+        assertThat(kDeleteFunc).isNotNull()
+
+        val deleteResponsePair = kDeleteFunc?.call(kClazzCompanionObjectInstance) as Pair<*, *>
+
+        assertThat(deleteResponsePair.first).isInstanceOf(String::class.java)
+        assertThat(deleteResponsePair.first).isEqualTo("{\"userId\": 3, \"id\": 3, \"title\": \"Test title 3\", \"body\": \"Test title 2-3\"}")
+
+        assertThat(deleteResponsePair.second is Int).isTrue()
+        assertThat(deleteResponsePair.second).isEqualTo(200)
+
+        val kPatchFunc = kClazzCompanionObject.functions.find { it.name == "getpostsSLASHpatch" }
+        assertThat(kPatchFunc).isNotNull()
+
+        val patchResponsePair = kPatchFunc?.call(kClazzCompanionObjectInstance) as Pair<*, *>
+
+        assertThat(patchResponsePair.first).isInstanceOf(String::class.java)
+        assertThat(patchResponsePair.first).isEqualTo("{\"userId\": 3, \"id\": 3, \"title\": \"Test title 3\", \"body\": \"Test title 2-3\"}")
+
+        assertThat(patchResponsePair.second is Int).isTrue()
+        assertThat(patchResponsePair.second).isEqualTo(200)
+    }
+
+    @Test
+    fun `get 200 as default response code for Assume annotated API method`() {
+
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+                        interface NewsApiService {
+                            @Assume(
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                             @GET("posts")
+                            suspend fun getPostById(): String
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+        assertThat(result.messages).contains("Assume annotation processor was called")
+
+        val kClazz =
+            result.classLoader.loadClass("com.aniketbhoite.assume.mocker.AssumeClass").kotlin
+        assertThat(kClazz)
+
+        val kClazzCompanionObject = kClazz.companionObject
+        assertThat(kClazzCompanionObject)
+
+        assertThat(kClazzCompanionObject?.functions?.size == 0).isFalse()
+        val kFunc = kClazzCompanionObject?.functions?.find { it.name == "getposts" }
+        assertThat(kFunc).isNotNull()
+
+        val responsePair = kFunc?.call(kClazz.companionObjectInstance) as Pair<*, *>
+
+        assertThat(responsePair.second is Int).isTrue()
+        assertThat(responsePair.second).isEqualTo(200)
+    }
+
+    @Test
+    fun `skipped method & class generation for single api with ignored`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+                        interface NewsApiService {
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}",
+                                ignore = true
+                            )
+                             @GET("posts")
+                            suspend fun getPostById(): String
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+        assertThat(result.messages).contains("Assume annotation processor was called")
+
+        val kClazz =
+            result.classLoader.tryLoadClass("com.aniketbhoite.assume.mocker.AssumeClass")?.kotlin
+        assertThat(kClazz).isNull()
+    }
+
+    @Test
+    fun `skipped method generation when ignored`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+                        import retrofit2.http.POST
+                        import retrofit2.http.Query
+
+                        interface NewsApiService {
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                             @GET("posts")
+                            suspend fun getPostById(): String
+
+
+                            @Assume(
+                                response = "[\n" +
+                                    "  {\n" +
+                                    "    \"postId\": 1,\n" +
+                                    "    \"id\": 1,\n" +
+                                    "    \"name\": \"John Doe\",\n" +
+                                    "    \"email\": \"johndoe@gardner.biz\",\n" +
+                                    "    \"body\": \"Comment 3\"\n" +
+                                    "  },\n" +
+                                    "  {\n" +
+                                    "    \"postId\": 1,\n" +
+                                    "    \"id\": 2,\n" +
+                                    "    \"name\": \"Alice\",\n" +
+                                    "    \"email\": \"alice@sydney.com\",\n" +
+                                    "    \"body\": \"Comment 2\"\n" +
+                                    "  }\n" +
+                                    "]",
+                                    ignore = true
+                            )
+                            @POST("comments")
+                            suspend fun queryCommentsForPostId(@Query("postId") id: Int): Any
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+        assertThat(result.messages).contains("Assume annotation processor was called")
+
+        val kClazz =
+            result.classLoader.loadClass("com.aniketbhoite.assume.mocker.AssumeClass").kotlin
+        assertThat(kClazz).isNotNull()
+
+        val kClazzCompanionObject = kClazz.companionObject
+        assertThat(kClazzCompanionObject)
+
+        assertThat(kClazzCompanionObject?.functions?.size == 0).isFalse()
+
+        val kGetFunc = kClazzCompanionObject?.functions?.find { it.name == "getposts" }
+        assertThat(kGetFunc).isNotNull()
+
+        val kPostFunc = kClazzCompanionObject?.functions?.find { it.name == "getcomments" }
+        assertThat(kPostFunc).isNull()
+    }
+
+    @Test
+    fun `correct method name, generated annotation & response for API with Path variable`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+                        import retrofit2.http.Path
+
+                        interface NewsApiService {
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}"
+                            )
+                            @GET("posts/{id}")
+                            suspend fun getPostById(@Path("id") id: Int): String
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+        assertThat(result.messages).contains("Assume annotation processor was called")
+
+        val kClazz =
+            result.classLoader.loadClass("com.aniketbhoite.assume.mocker.AssumeClass").kotlin
+        assertThat(kClazz)
+
+        val kClazzCompanionObject = kClazz.companionObject
+        assertThat(kClazzCompanionObject)
+
+        assertThat(kClazzCompanionObject?.functions?.size == 0).isFalse()
+        val kFunc = kClazzCompanionObject?.functions?.find { it.name == "getpostsSLASHAS_PATH_AS" }
+        assertThat(kFunc).isNotNull()
+
+        val funcAnnotations = kFunc?.annotations
+        assertThat(funcAnnotations).isNotNull()
+        assertThat(funcAnnotations?.size).isNotEqualTo(0)
+
+        val pathIndexes = funcAnnotations?.find { it is PathIndexes }
+        assertThat(pathIndexes).isNotNull()
+        val indexes = (pathIndexes as PathIndexes).index
+        assertThat(indexes).isNotNull()
+        assertThat(indexes.size).isEqualTo(1)
+        assertThat(indexes).isEqualTo(intArrayOf(1))
+
+        val responsePair = kFunc.call(kClazz.companionObjectInstance) as Pair<*, *>
+
+        assertThat(responsePair.first).isInstanceOf(String::class.java)
+        assertThat(responsePair.first).isEqualTo("{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}")
+
+        assertThat(responsePair.second is Int).isTrue()
+        assertThat(responsePair.second).isEqualTo(200)
     }
 }

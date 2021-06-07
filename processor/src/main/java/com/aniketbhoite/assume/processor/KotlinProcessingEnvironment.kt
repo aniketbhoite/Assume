@@ -1,6 +1,6 @@
 package com.aniketbhoite.assume.processor
 
-import java.util.*
+import java.util.Locale
 import javax.annotation.processing.Filer
 import javax.annotation.processing.Messager
 import javax.annotation.processing.ProcessingEnvironment
