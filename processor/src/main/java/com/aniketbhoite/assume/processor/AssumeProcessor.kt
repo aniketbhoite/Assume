@@ -15,6 +15,7 @@ import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import java.io.BufferedReader
 import java.io.File
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.ProcessingEnvironment
@@ -81,6 +82,29 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
             }
 
             val assumeAnnotation = element.getAnnotation(Assume::class.java)
+            var response = assumeAnnotation.response
+            val isResponseFromJsonFile = response.endsWith(".json")
+            if (!response.isValidResponse()) {
+                messager.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "Provided response is not valid. please pass json file path or valid json string",
+                    element
+                )
+            }
+            if (isResponseFromJsonFile) {
+                try {
+                    val bufferedReader: BufferedReader =
+                        File(assumeAnnotation.response).bufferedReader()
+                    bufferedReader.use { it.readText() }.also { response = it }
+                } catch (e: Exception) {
+                    messager.printMessage(
+                        Diagnostic.Kind.ERROR,
+                        "Something wrong with the file ${assumeAnnotation.response}",
+                        element
+                    )
+                    continue
+                }
+            }
             val retrofitMethodAnnotationValue =
                 when {
                     element.getAnnotation(GET::class.java) != null ->
@@ -123,7 +147,7 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
                 }
 
                 requestHashMap += seg.joinToString("SLASH") to Triple(
-                    assumeAnnotation.response,
+                    response,
                     assumeAnnotation.responseCode,
                     pathIndexes
                 )

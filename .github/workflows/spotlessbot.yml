@@ -10,7 +10,7 @@ on:
 
 jobs:
   check:
-    name: Static analysis
+    name: Static analysis and Unit test
     runs-on: ubuntu-latest
 
     steps:
@@ -25,3 +25,7 @@ jobs:
       - name: Static Analysis
         continue-on-error: false
         run: ./gradlew spotlessCheck
+
+      - name: Unit test
+        continue-on-error: false
+        run: ./gradlew :processor:test
