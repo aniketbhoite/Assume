@@ -227,7 +227,7 @@ class AssumeProcessorTest {
     }
 
     @Test
-    fun `internal error when Assume annotation is applied to parent class`() {
+    fun `compilation error when Assume annotation is applied to parent class`() {
         val result = KotlinCompilation().apply {
             sources = listOf(
                 SourceFile.kotlin(
@@ -262,10 +262,10 @@ class AssumeProcessorTest {
          * In above test case Class with Assume class does not have enclosing Element(means parent class)
          * val metadata = interfaceElement.kotlinClassMetadata()
          */
-        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.INTERNAL_ERROR)
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.COMPILATION_ERROR)
         assertThat(result.messages).contains(
             "java.lang.NullPointerException\n" +
-                "\tat com.aniketbhoite.assume.processor.ProcessorUtilKt.kotlinClassMetadata(ProcessorUtil.kt:12)"
+                    "\tat com.aniketbhoite.assume.processor.ProcessorUtilKt.kotlinClassMetadata(ProcessorUtil.kt:12)"
         )
     }
 
@@ -459,21 +459,21 @@ class AssumeProcessorTest {
             (postResponsePair.first as String).trim()
         ).isEqualTo(
             "[\n" +
-                "  {\n" +
-                "    \"postId\": 1,\n" +
-                "    \"id\": 1,\n" +
-                "    \"name\": \"John Doe\",\n" +
-                "    \"email\": \"johndoe@gardner.biz\",\n" +
-                "    \"body\": \"Comment 3\"\n" +
-                "  },\n" +
-                "  {\n" +
-                "    \"postId\": 1,\n" +
-                "    \"id\": 2,\n" +
-                "    \"name\": \"Alice\",\n" +
-                "    \"email\": \"alice@sydney.com\",\n" +
-                "    \"body\": \"Comment 2\"\n" +
-                "  }\n" +
-                "]"
+                    "  {\n" +
+                    "    \"postId\": 1,\n" +
+                    "    \"id\": 1,\n" +
+                    "    \"name\": \"John Doe\",\n" +
+                    "    \"email\": \"johndoe@gardner.biz\",\n" +
+                    "    \"body\": \"Comment 3\"\n" +
+                    "  },\n" +
+                    "  {\n" +
+                    "    \"postId\": 1,\n" +
+                    "    \"id\": 2,\n" +
+                    "    \"name\": \"Alice\",\n" +
+                    "    \"email\": \"alice@sydney.com\",\n" +
+                    "    \"body\": \"Comment 2\"\n" +
+                    "  }\n" +
+                    "]"
         )
 
         assertThat(postResponsePair.second is Int).isTrue()
@@ -728,6 +728,67 @@ class AssumeProcessorTest {
 
         assertThat(responsePair.first).isInstanceOf(String::class.java)
         assertThat(responsePair.first).isEqualTo("{\"userId\": 1, \"id\": 1, \"title\": \"Test title 1\", \"body\": \"Test title 2\"}")
+
+        assertThat(responsePair.second is Int).isTrue()
+        assertThat(responsePair.second).isEqualTo(200)
+    }
+
+    @Test
+    fun `generated function returns correct response and response code when response is provided as json file`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+                        interface NewsApiService {
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "/Users/nbt762/Documents/Personal/Assume/processor/src/test/kotlin/com/aniketbhoite/assume/response/response.json"
+                            )
+                             @GET("posts")
+                            suspend fun getPostById(): String
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+        assertThat(result.messages).contains("Assume annotation processor was called")
+
+        val kClazz =
+            result.classLoader.loadClass("com.aniketbhoite.assume.mocker.AssumeClass").kotlin
+        assertThat(kClazz)
+
+        val kClazzCompanionObject = kClazz.companionObject
+        assertThat(kClazzCompanionObject)
+
+        assertThat(kClazzCompanionObject?.functions?.size == 0).isFalse()
+        val kFunc = kClazzCompanionObject?.functions?.find { it.name == "getposts" }
+        assertThat(kFunc).isNotNull()
+
+        val responsePair = kFunc?.call(kClazz.companionObjectInstance) as Pair<*, *>
+
+        assertThat(responsePair.first).isInstanceOf(String::class.java)
+        assertThat(responsePair.first).isEqualTo(
+            "[\n" +
+                    "  {\n" +
+                    "    \"postId\": 2,\n" +
+                    "    \"id\": 6,\n" +
+                    "    \"name\": \"John Dow\",\n" +
+                    "    \"email\": \"johndope@random.com\",\n" +
+                    "    \"body\": \"Random Body\"\n" +
+                    "  }\n" +
+                    "]"
+        )
 
         assertThat(responsePair.second is Int).isTrue()
         assertThat(responsePair.second).isEqualTo(200)

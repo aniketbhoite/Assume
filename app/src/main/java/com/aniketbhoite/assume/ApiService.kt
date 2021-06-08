@@ -59,22 +59,7 @@ interface ApiService {
     suspend fun getCommentsForPostId(@Path("id") id: Int): List<CommentModel>
 
     @Assume(
-        response = "[\n" +
-                "  {\n" +
-                "    \"postId\": 1,\n" +
-                "    \"id\": 1,\n" +
-                "    \"name\": \"John Doe\",\n" +
-                "    \"email\": \"johndoe@gardner.biz\",\n" +
-                "    \"body\": \"Comment 3\"\n" +
-                "  },\n" +
-                "  {\n" +
-                "    \"postId\": 1,\n" +
-                "    \"id\": 2,\n" +
-                "    \"name\": \"Alice\",\n" +
-                "    \"email\": \"alice@sydney.com\",\n" +
-                "    \"body\": \"Comment 2\"\n" +
-                "  }\n" +
-                "]"
+        response = "/Users/nbt762/Documents/Personal/Assume/processor/src/test/kotlin/com/aniketbhoite/assume/response/response.json"
     )
     @GET("comments")
     suspend fun queryCommentsForPostId(@Query("postId") id: Int): List<CommentModel>

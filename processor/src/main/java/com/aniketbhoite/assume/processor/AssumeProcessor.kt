@@ -84,7 +84,15 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
 
             val assumeAnnotation = element.getAnnotation(Assume::class.java)
             var response = assumeAnnotation.response
-            if(assumeAnnotation.responseFromFile){
+            val responseFromFile = response.endsWith(".json")
+            if(!responseFromFile && !(response.endsWith("}") || response.endsWith("]"))){
+                messager.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "Not valid response",
+                    element
+                )
+            }
+            if(responseFromFile){
                 try {
                     val bufferedReader: BufferedReader = File(assumeAnnotation.response).bufferedReader()
                     bufferedReader.use { it.readText() }.also { response = it }

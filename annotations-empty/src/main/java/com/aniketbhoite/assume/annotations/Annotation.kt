@@ -5,7 +5,6 @@ package com.aniketbhoite.assume.annotations
 annotation class Assume(
     val response: String,
     val responseCode: Int = 200,
-    val responseFromFile: Boolean = false,
     val ignore: Boolean = false
 )
 
