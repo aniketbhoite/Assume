@@ -9,14 +9,13 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import retrofit2.http.*
-import java.io.BufferedReader
 import com.squareup.kotlinpoet.TypeSpec
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import java.io.BufferedReader
 import java.io.File
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.ProcessingEnvironment
@@ -84,17 +83,18 @@ class AssumeProcessor : AbstractProcessor(), KotlinProcessingEnvironment {
 
             val assumeAnnotation = element.getAnnotation(Assume::class.java)
             var response = assumeAnnotation.response
-            val responseFromFile = response.endsWith(".json")
-            if(!responseFromFile && !(response.endsWith("}") || response.endsWith("]"))){
+            val isResponseFromJsonFile = response.endsWith(".json")
+            if (!response.isValidResponse()) {
                 messager.printMessage(
                     Diagnostic.Kind.ERROR,
-                    "Not valid response",
+                    "Provided response is not valid. please pass json file path or valid json string",
                     element
                 )
             }
-            if(responseFromFile){
+            if (isResponseFromJsonFile) {
                 try {
-                    val bufferedReader: BufferedReader = File(assumeAnnotation.response).bufferedReader()
+                    val bufferedReader: BufferedReader =
+                        File(assumeAnnotation.response).bufferedReader()
                     bufferedReader.use { it.readText() }.also { response = it }
                 } catch (e: Exception) {
                     messager.printMessage(

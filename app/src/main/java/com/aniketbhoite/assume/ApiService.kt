@@ -18,19 +18,19 @@ interface ApiService {
 
     @Assume(
         response = "[\n" +
-                "  {\n" +
-                "    \"userId\": 1,\n" +
-                "    \"id\": 1,\n" +
-                "    \"title\": \"Test title 1\",\n" +
-                "    \"body\": \"Test title 1\"\n" +
-                "  },\n" +
-                "  {\n" +
-                "    \"userId\": 2,\n" +
-                "    \"id\": 2,\n" +
-                "    \"title\": \"Test title 2\",\n" +
-                "    \"body\": \"Test title 2\"\n" +
-                "  }\n" +
-                "]"
+            "  {\n" +
+            "    \"userId\": 1,\n" +
+            "    \"id\": 1,\n" +
+            "    \"title\": \"Test title 1\",\n" +
+            "    \"body\": \"Test title 1\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"userId\": 2,\n" +
+            "    \"id\": 2,\n" +
+            "    \"title\": \"Test title 2\",\n" +
+            "    \"body\": \"Test title 2\"\n" +
+            "  }\n" +
+            "]"
     )
     @GET("posts")
     suspend fun getPosts(): List<PostListModelItem>
@@ -38,21 +38,21 @@ interface ApiService {
     @Assume(
         responseCode = 200,
         response = "[\n" +
-                "  {\n" +
-                "    \"postId\": 1,\n" +
-                "    \"id\": 1,\n" +
-                "    \"name\": \"John Doe\",\n" +
-                "    \"email\": \"johndoe@gardner.biz\",\n" +
-                "    \"body\": \"Comment 1\"\n" +
-                "  },\n" +
-                "  {\n" +
-                "    \"postId\": 1,\n" +
-                "    \"id\": 2,\n" +
-                "    \"name\": \"Alice\",\n" +
-                "    \"email\": \"alice@sydney.com\",\n" +
-                "    \"body\": \"Comment 2\"\n" +
-                "  }\n" +
-                "]",
+            "  {\n" +
+            "    \"postId\": 1,\n" +
+            "    \"id\": 1,\n" +
+            "    \"name\": \"John Doe\",\n" +
+            "    \"email\": \"johndoe@gardner.biz\",\n" +
+            "    \"body\": \"Comment 1\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"postId\": 1,\n" +
+            "    \"id\": 2,\n" +
+            "    \"name\": \"Alice\",\n" +
+            "    \"email\": \"alice@sydney.com\",\n" +
+            "    \"body\": \"Comment 2\"\n" +
+            "  }\n" +
+            "]",
         ignore = false
     )
     @GET("post/{id}/comments")

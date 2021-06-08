@@ -265,7 +265,7 @@ class AssumeProcessorTest {
         assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.COMPILATION_ERROR)
         assertThat(result.messages).contains(
             "java.lang.NullPointerException\n" +
-                    "\tat com.aniketbhoite.assume.processor.ProcessorUtilKt.kotlinClassMetadata(ProcessorUtil.kt:12)"
+                "\tat com.aniketbhoite.assume.processor.ProcessorUtilKt.kotlinClassMetadata(ProcessorUtil.kt:12)"
         )
     }
 
@@ -459,21 +459,21 @@ class AssumeProcessorTest {
             (postResponsePair.first as String).trim()
         ).isEqualTo(
             "[\n" +
-                    "  {\n" +
-                    "    \"postId\": 1,\n" +
-                    "    \"id\": 1,\n" +
-                    "    \"name\": \"John Doe\",\n" +
-                    "    \"email\": \"johndoe@gardner.biz\",\n" +
-                    "    \"body\": \"Comment 3\"\n" +
-                    "  },\n" +
-                    "  {\n" +
-                    "    \"postId\": 1,\n" +
-                    "    \"id\": 2,\n" +
-                    "    \"name\": \"Alice\",\n" +
-                    "    \"email\": \"alice@sydney.com\",\n" +
-                    "    \"body\": \"Comment 2\"\n" +
-                    "  }\n" +
-                    "]"
+                "  {\n" +
+                "    \"postId\": 1,\n" +
+                "    \"id\": 1,\n" +
+                "    \"name\": \"John Doe\",\n" +
+                "    \"email\": \"johndoe@gardner.biz\",\n" +
+                "    \"body\": \"Comment 3\"\n" +
+                "  },\n" +
+                "  {\n" +
+                "    \"postId\": 1,\n" +
+                "    \"id\": 2,\n" +
+                "    \"name\": \"Alice\",\n" +
+                "    \"email\": \"alice@sydney.com\",\n" +
+                "    \"body\": \"Comment 2\"\n" +
+                "  }\n" +
+                "]"
         )
 
         assertThat(postResponsePair.second is Int).isTrue()
@@ -780,17 +780,81 @@ class AssumeProcessorTest {
         assertThat(responsePair.first).isInstanceOf(String::class.java)
         assertThat(responsePair.first).isEqualTo(
             "[\n" +
-                    "  {\n" +
-                    "    \"postId\": 2,\n" +
-                    "    \"id\": 6,\n" +
-                    "    \"name\": \"John Dow\",\n" +
-                    "    \"email\": \"johndope@random.com\",\n" +
-                    "    \"body\": \"Random Body\"\n" +
-                    "  }\n" +
-                    "]"
+                "  {\n" +
+                "    \"postId\": 2,\n" +
+                "    \"id\": 6,\n" +
+                "    \"name\": \"John Dow\",\n" +
+                "    \"email\": \"johndope@random.com\",\n" +
+                "    \"body\": \"Random Body\"\n" +
+                "  }\n" +
+                "]"
         )
 
         assertThat(responsePair.second is Int).isTrue()
         assertThat(responsePair.second).isEqualTo(200)
+    }
+
+    @Test
+    fun `compile time error when file not found`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+                        interface NewsApiService {
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "/Users/nbt762/Documents/Personal/Assume/processor/src/test/kotlin/com/aniketbhoite/assume/response/response1.json"
+                            )
+                             @GET("posts")
+                            suspend fun getPostById(): String
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.COMPILATION_ERROR)
+        assertThat(result.messages).contains("Something wrong with the file")
+    }
+
+    @Test
+    fun `compile time error when response is invalid`() {
+        val result = KotlinCompilation().apply {
+            sources = listOf(
+                SourceFile.kotlin(
+                    "ApiService.kt",
+                    """
+                        import com.aniketbhoite.assume.annotations.Assume
+                        import retrofit2.http.GET
+
+                        interface NewsApiService {
+                            @Assume(
+                                responseCode = 200,
+                                response =
+                                "/Users/nbt762/Documents/Personal/Assume/processor/src/test/kotlin/com/aniketbhoite/assume/response/response.csv"
+                            )
+                             @GET("posts")
+                            suspend fun getPostById(): String
+                }
+            """
+                )
+            )
+
+            annotationProcessors = listOf(AssumeProcessor())
+            inheritClassPath = true
+            messageOutputStream = System.out
+        }.compile()
+
+        assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.COMPILATION_ERROR)
+        assertThat(result.messages).contains("Provided response is not valid. please pass json file path or valid json string")
     }
 }
