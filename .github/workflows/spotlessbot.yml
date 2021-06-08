@@ -27,5 +27,5 @@ jobs:
         run: ./gradlew spotlessCheck
 
       - name: Unit test
-          continue-on-error: false
-          run: ./gradlew :processor:test
+        continue-on-error: false
+        run: ./gradlew :processor:test
